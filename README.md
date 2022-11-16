@@ -1,8 +1,25 @@
 # Database Technology
 
-## PostgreSQL
+## PostgreSQL Docker
 
-### Environment Variables
+### Usage
+
+Run `psql`
+
+```
+docker exec -it {container_name} psql -U {user} {dbname}
+```
+
+Run sql files with docker.
+
+```
+docker cp ./localfile.sql containername:/container/path/file.sql
+docker exec -u postgresuser containername psql dbname postgresuser -f /container/path/file.sql
+```
+
+### Configurations
+
+#### Environment Variables
 
 ```
 POSTGRES_PORT=5432
@@ -14,7 +31,7 @@ PDADMIN_EMAIL=user@domain.dev
 PGADMIN_PASSWORD=password
 ```
 
-### Persistance data in pgAdmin
+#### Persistance data in pgAdmin
 
 Uncomment
 
@@ -35,7 +52,7 @@ Fix the permission
 sudo chown -R 5050:5050 pgadmin
 ```
 
-### Use with SSL
+#### Use with SSL
 
 Uncomment
 
