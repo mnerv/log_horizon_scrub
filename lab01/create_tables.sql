@@ -16,7 +16,7 @@ CREATE TABLE student (
     id INT NOT NULL UNIQUE,
     firstname VARCHAR(10) NOT NULL,
     lastname VARCHAR(30) NOT NULL,
-    city VARCHAR(15) NOT NULL,
+    city VARCHAR(15),
     department_code INT NOT NULL,
     telephone CHAR(10),
     PRIMARY KEY (id),
