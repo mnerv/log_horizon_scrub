@@ -1,4 +1,13 @@
-CREATE TABLE department(
+/*
+ * @file tables.sql
+ * @author Pratchaya Khansomboon (me@mononerv.dev)
+ * @author Eric Lundin
+ * @brief  Create database table with relations
+ * @date   2022-11-21
+ *
+ * @copyright Copyright (c) 2022
+ */
+CREATE TABLE department (
     code INT NOT NULL UNIQUE,
     name VARCHAR(30) NOT NULL,
     PRIMARY KEY(code)
