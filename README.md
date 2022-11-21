@@ -17,6 +17,12 @@ docker cp ./localfile.sql containername:/container/path/file.sql
 docker exec -u postgresuser containername psql dbname postgresuser -f /container/path/file.sql
 ```
 
+This commands works to by piping in the output to docker.
+
+```
+cat filename.sql | docker exec -i containername psql -U user -d dbname
+```
+
 ### Configurations
 
 #### Environment Variables
