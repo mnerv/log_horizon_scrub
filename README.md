@@ -1,107 +1,35 @@
 # Database Technology
 
-## PostgreSQL Docker
+## psql
 
-### Usage
+## Docker
 
-Run `psql`
+Setup postgresql with docker compose file.
 
-```
-docker exec -it {container_name} psql -U {user} {dbname}
-```
+## SSL
 
-Run sql files with docker.
+Generate certificate authority(CA), key and certificate, and the server key and csr(certificate signing request) and then sign the request.
 
 ```
-docker cp ./localfile.sql containername:/container/path/file.sql
-docker exec -u postgresuser containername psql dbname postgresuser -f /container/path/file.sql
+--CA
+openssl genrsa 2048 > ca.key
+openssl req -new -x509 -nodes -days 365 -key ca.key -out ca.cert
+--server
+openssl req -newkey rsa:2048 -nodes -days 365 -keyout server.key -out server.csr
+openssl x509 -req -days 365 -set_serial 01 -in server.csr -out server.cert -CA ca.cert -CAkey ca.key
 ```
 
-This commands works to by piping in the output to docker.
+Files that should been generated.
 
 ```
-cat filename.sql | docker exec -i containername psql -U user -d dbname
+ca.cert
+ca.key
+server.cert
+server.csr
+server.key
 ```
 
-### Configurations
-
-#### Environment Variables
-
-```
-POSTGRES_PORT=5432
-POSTGRES_DATABASE=database
-POSTGRES_USER=user
-POSTGRES_PASSWORD=password
-PGADMIN_PORT=80
-PDADMIN_EMAIL=user@domain.dev
-PGADMIN_PASSWORD=password
-```
-
-#### Persistance data in pgAdmin
-
-Uncomment
-
-```yml
-    # volumes:
-    #   - ./data/pgadmin:/var/lib/pgadmin
-```
-Fix permission
-
-```
-mkdir data && cd data
-mkdir pgadmin
-```
-
-Fix the permission
-
-```
-sudo chown -R 5050:5050 pgadmin
-```
-
-#### Use with SSL
-
-Uncomment
-
-```yml
-#   command: >
-#     -c ssl=on
-#     -c ssl_cert_file=/var/lib/postgresql/server.crt
-#     -c ssl_key_file=/var/lib/postgresql/server.key
-```
-
-and
-
-```yml
-#     - ./data/ssl/server.crt:/var/lib/postgresql/server.crt
-#     - ./data/ssl/server.key:/var/lib/postgresql/server.key
-```
-
-Create `data/ssl` directory.
-
-```
-mkdir data && cd data && mkdir ssl && cd ssl
-```
-
-Generate `Certificate Signing Request (CSR) file`
-
-```
-openssl req -new -text -out server.req
-```
-
-Removed passphrase
-
-```
-openssl rsa -in privkey.pem -out server.key
-rm privkey.pem
-```
-
-Turn into self-signed certificate
-
-```
-openssl req -x509 -in server.req -text -key server.key -out server.crt
-```
-
-Fix permission
+Use command below to fix permission for docker.
 
 ```
 chmod og-rwx server.key
