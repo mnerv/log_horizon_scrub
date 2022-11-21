@@ -29,7 +29,7 @@ CREATE TABLE course (
     teacher_id INT NOT NULL,
     department_code INT NOT NULL,
     PRIMARY KEY (code),
-    FOREIGN KEY (department_id) REFERENCES teacher(id) ON UPDATE CASCADE
+    FOREIGN KEY (teacher_id) REFERENCES teacher(id) ON UPDATE CASCADE,
     FOREIGN KEY (department_code) REFERENCES department(code) ON UPDATE CASCADE
 );
 
@@ -41,6 +41,6 @@ CREATE TABLE registration (
     status VARCHAR(2) NOT NULL,
     PRIMARY KEY (number),
     FOREIGN KEY (student_id) REFERENCES student(id) ON UPDATE CASCADE,
-    FOREIGN KEY (course_code) REFERENCES course_code(code) ON UPDATE CASCADE,
+    FOREIGN KEY (course_code) REFERENCES course(code) ON UPDATE CASCADE
 );
 
