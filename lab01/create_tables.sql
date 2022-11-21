@@ -9,7 +9,7 @@ CREATE TABLE teacher (
     fullname VARCHAR(40),
     department_code INT NOT NULL,
     PRIMARY KEY (id),
-    FOREIGN KEY (department_code) REFERENCES department(code) ON UPDATE CASCADE
+    FOREIGN KEY (department_code) REFERENCES department(code) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
 CREATE TABLE student (
@@ -20,7 +20,7 @@ CREATE TABLE student (
     department_code INT NOT NULL,
     telephone CHAR(10),
     PRIMARY KEY (id),
-    FOREIGN KEY (department_code) REFERENCES department(code) ON UPDATE CASCADE
+    FOREIGN KEY (department_code) REFERENCES department(code) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
 CREATE TABLE course (
@@ -30,7 +30,7 @@ CREATE TABLE course (
     department_code INT NOT NULL,
     PRIMARY KEY (code),
     FOREIGN KEY (teacher_id) REFERENCES teacher(id) ON UPDATE CASCADE,
-    FOREIGN KEY (department_code) REFERENCES department(code) ON UPDATE CASCADE
+    FOREIGN KEY (department_code) REFERENCES department(code) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
 CREATE TABLE registration (
@@ -40,7 +40,7 @@ CREATE TABLE registration (
     date DATE NOT NULL,
     status VARCHAR(2) NOT NULL,
     PRIMARY KEY (number),
-    FOREIGN KEY (student_id) REFERENCES student(id) ON UPDATE CASCADE,
-    FOREIGN KEY (course_code) REFERENCES course(code) ON UPDATE CASCADE
+    FOREIGN KEY (student_id) REFERENCES student(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    FOREIGN KEY (course_code) REFERENCES course(code) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
