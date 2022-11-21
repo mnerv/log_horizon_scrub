@@ -26,10 +26,10 @@ VALUES
 INSERT INTO student
 VALUES
 (100, 'Michale', 'Robbin'   , 'Malmö', 1, 0987321),
-(101, 'Carlos' , 'Manuel'   ,  null,   2, null),
+(101, 'Carlos' , 'Manuel'   ,  null  , 2, null),
 (102, 'Enrique', 'Sitaraman', 'Malmö', 1, 1234),
-(103, 'Joseph' , 'Dosni'    , 'Lund',  2, 564738),
-(104, 'Mario'  , 'Robbin'   ,  null,  1, null);
+(103, 'Joseph' , 'Dosni'    , 'Lund' , 2, 564738),
+(104, 'Mario'  , 'Robbin'   ,  null  , 1, null);
 
 INSERT INTO registration VALUES
 (12, 102, 'PIS32', '2020-02-06', 'VG'),
