@@ -1,6 +1,6 @@
 # Database Technology
 
-## psql
+This repository holds course assignments and notes for database technology course.
 
 ## Docker
 
