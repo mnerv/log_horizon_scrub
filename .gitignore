@@ -34,5 +34,8 @@ compile_commands.json
 .AppleDouble
 .LSOverride
 
+# rust
+target
+
 # Outputs
 data
