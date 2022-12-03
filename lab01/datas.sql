@@ -9,7 +9,7 @@
  */
 INSERT INTO department VALUES
 (1, 'computer science'),
-(2, 'physics'         );
+(2, 'physics'         ),
 (3, 'music'           );
 
 INSERT INTO teacher VALUES
@@ -26,12 +26,12 @@ INSERT INTO student VALUES
 (101, 'Carlos'  , 'Manuel'   ,  null  , 2, null        ),
 (102, 'Enrique' , 'Sitaraman', 'Malmö', 1, '0731298959'),
 (103, 'Joseph'  , 'Dosni'    , 'Lund' , 2, '0731298957'),
-(104, 'Mario'   , 'Robbin'   , 'Tokyo', 1, null        );
-(105, 'Tokyo'   , 'Tanaka'   , 'Tokyo', 3, null        );
-(106, 'Jean-Ken', 'Johanny'  , 'Tokyo', 3, null        );
-(107, 'Kamikaze', 'Boy'      , 'Tokyo', 3, null        );
-(108, 'DJ Santa', 'Monica'   , 'Tokyo', 3, null        );
-(109, 'Spear'   , 'Rib'      , 'Tokyo', 3, null        );
+(104, 'Mario'   , 'Robbin'   , 'Tokyo', 1, null        ),
+(105, 'Tokyo'   , 'Tanaka'   , 'Tokyo', 3, null        ),
+(106, 'Jean-Ken', 'Johanny'  , 'Tokyo', 3, null        ),
+(107, 'Kamikaze', 'Boy'      , 'Tokyo', 3, null        ),
+(108, 'DJ Santa', 'Monica'   , 'Tokyo', 3, null        ),
+(109, 'Spear'   , 'Rib'      , 'Tokyo', 3, null        ),
 (110, 'Takuma'  , 'Mitamura' , 'Kyoto', 3, null        );
 
 INSERT INTO registration VALUES
