@@ -63,7 +63,7 @@ CREATE TABLE shopping_list(
     FOREIGN KEY (customer_id) REFERENCES customer(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
-CREATE TABLE order(
+CREATE TABLE orders(
     id INT NOT NULL UNIQUE, 
     customer_id INT NOT NULL,
     created DATE NOT NULL,
@@ -88,6 +88,6 @@ CREATE TABLE order_detail(
     product_id INT NOT NULL,
     quantity INT NOT NULL,
     PRIMARY KEY(id),
-    FOREIGN KEY(order_id) REFERENCES order(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    FOREIGN KEY(order_id) REFERENCES orders(id) ON UPDATE CASCADE ON DELETE CASCADE,
     FOREIGN KEY(product_id) REFERENCES product(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
