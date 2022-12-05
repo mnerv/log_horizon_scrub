@@ -8,35 +8,41 @@
  *
  * @copyright Copyright (c) 2022
  */
-use postgres::{Client, NoTls, Error};
+use postgres::{Client, NoTls};
+use std::error::Error;
+//use std::io;
+//use std::io::Write;
 
-fn main() -> Result<(), Error> {
-    const HOST: &'static str = "localhost";
-    const USER: &'static str = "miku";
-    const PASSWORD: &'static str = "hatsune";
-    const DATABASE: &'static str = "mikudb";
-    let client_param = format!("host={} user={} password='{}' dbname={}", HOST, USER, PASSWORD, DATABASE);
-    let mut client = Client::connect(&client_param, NoTls)?;
+fn main() -> Result<(), Box<dyn Error>> {
+    let host = dotenv::var("PG_HOST")?;
+    let user = dotenv::var("PG_USER")?;
+    let password = dotenv::var("PG_PASSWORD")?;
+    let db       = dotenv::var("PG_DB")?;
+    let schema   = dotenv::var("PG_SCHEMA")?;
+    let mut client = Client::connect(&format!("host={host} user={user} password='{password}' dbname={db}"), NoTls)?;
 
-    // client.batch_execute("
-    //     CREATE TABLE person(
-    //         id INT NOT NULL UNIQUE,
-    //         name VARCHAR(30)
-    //     )
-    // ")?;
+    //let mut name = String::new();
+    //let mut password = String::new();
 
-    // client.batch_execute("
-    //     INSERT INTO person VALUES
-    //     (1, 'Eric'),
-    //     (2, 'Pratchaya');
-    // ")?;
+    //println!("    Welcome to Hope store!");
+    //println!("Here we sell hopes and dreams :)");
+    //print!("name: ");
+    //io::stdout().flush()?;
+    //io::stdin().read_line(&mut name)?;
+    //print!("password: ");
+    //io::stdout().flush()?;
+    //io::stdin().read_line(&mut password)?;
 
+    //println!("Login: {name}");
 
-    for row in client.query("SELECT id, name FROM person", &[])? {
+    client.execute(&format!("SET SCHEMA '{schema}'"), &[])?;
+    for row in client.query("SELECT id, firstname, lastname FROM student", &[])? {
         let id: i32 = row.get(0);
-        let name: &str = row.get(1);
-        println!("found person: {} {}", id, name);
+        let firstname: &str = row.get(1);
+        let lastname: &str = row.get(2);
+        println!("found: {} {} {}", id, firstname, lastname);
     }
 
+    client.close()?;
     Ok(())
 }

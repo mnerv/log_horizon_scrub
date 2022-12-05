@@ -1,0 +1,6 @@
+# Rust output
+target
+
+# Environment file
+.env
+
