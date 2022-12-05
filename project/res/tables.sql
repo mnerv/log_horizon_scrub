@@ -87,7 +87,7 @@ CREATE TABLE order_detail(
     order_id INT NOT NULL,
     product_id INT NOT NULL,
     quantity INT NOT NULL,
-    PRIMARY KEY(id),
+    PRIMARY KEY(order_id, product_id),
     FOREIGN KEY(order_id) REFERENCES orders(id) ON UPDATE CASCADE ON DELETE CASCADE,
     FOREIGN KEY(product_id) REFERENCES product(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
