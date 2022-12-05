@@ -36,7 +36,7 @@ INNER JOIN teacher AS t ON t.id = c.teacher_id;
 -- 4. Show id and full name of the students, and number of teachers they have had any
 --    course with them. Be careful that if student X is/was taking two courses which are
 --    given by the same teacher Y, that student has only one teacher.
-SELECT s.firstname, s.lastname, s.id, COUNT(c.teacher_id) AS number_of_teachers
+SELECT s.firstname, s.lastname, s.id, COUNT(DISTINCT c.teacher_id) AS number_of_teachers
 FROM student AS s
 INNER JOIN registration AS r ON s.id = r.student_id
 INNER JOIN course AS c on c.code = r.course_code
@@ -47,9 +47,18 @@ GROUP BY s.firstname, s.lastname, s.id;
 --    students on each course in each year. Thus, it is good to create a view for that.
 --    Please write a suitable sql command to create a view for that report. 
 
+CREATE VIEW course_enrollment AS 
+    SELECT c.name, COUNT(DISTINCT r.student_id ) AS enrollments
+    FROM course AS c 
+    INNER JOIN registration AS r ON c.code = r.course_code
+    GROUP BY c.name;
+SELECT * FROM course_enrollment;
+
 -- 6. Show a list of course name and number of students registered for that course in
 --    year 2020. Is it better to use your created View in exercise 5 or writing a new Join
 --    command?
+
+
 
 -- Procedures
 
