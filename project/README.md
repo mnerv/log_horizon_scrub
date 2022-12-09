@@ -24,3 +24,11 @@ Use `cargo` to build and run the application.
 cargo run
 ```
 
+## Queries
+
+Use query command below to list schemas in `psql`.
+
+```sql
+SELECT schema_name FROM information_schema.schemata;
+```
+

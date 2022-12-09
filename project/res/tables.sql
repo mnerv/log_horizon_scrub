@@ -7,6 +7,13 @@
  *
  * @copyright Copyright (c) 2022
  */
+CREATE TABLE admin(
+    id SERIAL NOT NULL UNIQUE,
+    email VARCHAR(30) NOT NULL UNIQUE,
+    password VARCHAR(30) NOT NULL,
+    PRIMARY KEY(id)
+);
+
 CREATE TABLE address(
     id SERIAL NOT NULL UNIQUE,
     street VARCHAR(30),
@@ -18,23 +25,34 @@ CREATE TABLE address(
 
 CREATE TABLE supplier(
     id SERIAL NOT NULL UNIQUE,
-    address_id INT NOT NULL,
+    admin_id INT NOT NULL,
+    address_id INT NOT NULL UNIQUE,
     name VARCHAR(30) NOT NULL,
     telephone CHAR(10) NOT NULL,
     address VARCHAR(30) NOT NULL,
     PRIMARY KEY (id),
+    FOREIGN KEY (admin_id) REFERENCES admin(id) on UPDATE CASCADE,
     FOREIGN KEY (address_id) REFERENCES address(id) on UPDATE CASCADE
 );
 
 CREATE TABLE customer(
     id SERIAL NOT NULL UNIQUE,
-    address_id INT NOT NULL,
+    address_id INT NOT NULL UNIQUE,
     firstname VARCHAR(30) NOT NULL,
     lastname VARCHAR(30) NOT NULL,
     email VARCHAR(30) NOT NULL,
     password VARCHAR(30) NOT NULL,
     PRIMARY KEY(id),
     FOREIGN KEY (address_id) REFERENCES address(id) ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE discount(
+    id SERIAL NOT NULL UNIQUE,
+    code VARCHAR(30) NOT NULL UNIQUE,
+    name VARCHAR(30) NOT NULL,
+    start_date DATE,
+    end_date DATE,
+    PRIMARY KEY(id)
 );
 
 CREATE TABLE product(
@@ -45,24 +63,6 @@ CREATE TABLE product(
     price NUMERIC(16,2) NOT NULL,
     PRIMARY KEY(id),
     FOREIGN KEY (supplier_id) REFERENCES supplier(id) ON UPDATE CASCADE ON DELETE CASCADE
-);
-
-CREATE TABLE discount(
-    id SERIAL NOT NULL UNIQUE,
-    code VARCHAR(30) NOT NULL,
-    name VARCHAR(30) NOT NULL,
-    start_date DATE,
-    end_date DATE,
-    PRIMARY KEY(id)
-);
-
-CREATE TABLE discount_product(
-    discount_id INT NOT NULL,
-    product_id INT NOT NULL,
-    factor NUMERIC(3, 2) NOT NULL, -- unsure about the data type
-    PRIMARY KEY(discount_id, product_id),
-    FOREIGN KEY(discount_id) REFERENCES discount(id) ON UPDATE CASCADE ON DELETE CASCADE,
-    FOREIGN KEY(product_id) REFERENCES product(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
 CREATE TABLE shopping_list(
@@ -76,10 +76,21 @@ CREATE TABLE shopping_list(
 CREATE TABLE orders(
     id SERIAL NOT NULL UNIQUE, 
     customer_id INT NOT NULL,
+    admin_id INT,
     created DATE NOT NULL,
     status VARCHAR(30) NOT NULL,
     PRIMARY KEY(id),
-    FOREIGN KEY (customer_id) REFERENCES customer(id) ON UPDATE CASCADE ON DELETE CASCADE
+    FOREIGN KEY (customer_id) REFERENCES customer(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    FOREIGN KEY (admin_id) REFERENCES admin(id) ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE discount_product(
+    discount_id INT NOT NULL,
+    product_id INT NOT NULL,
+    factor NUMERIC(3, 2) NOT NULL, -- unsure about the data type
+    PRIMARY KEY(discount_id, product_id),
+    FOREIGN KEY(discount_id) REFERENCES discount(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    FOREIGN KEY(product_id) REFERENCES product(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
 CREATE TABLE shopping_cart(
