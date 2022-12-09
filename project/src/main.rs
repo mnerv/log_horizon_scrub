@@ -13,79 +13,79 @@ use std::error::Error;
 use std::io;
 use std::io::Write;
 
-enum Page{
-    Login,
-    Home,
+struct Login {
+    id: i32, 
+    email: String
 }
 
-fn admin(client: &mut Client) -> Result<(), Box<dyn Error>>{
+fn add_supplier(client: &mut Client, admin: &Login)-> Result<(), Box<dyn Error>>{
+    Ok(())
+}
 
-/* admin
- *
- * TODO:
- * Login 
- * add supplier 
- * add product
- * edit product 
- * delete product 
- * list products - search
- * add discounts 
- * assign discounts 
- * show discount history
- * confirm order 
- * see a list of products with maximum orders in each mont
- */
-    let mut current_page = Page::Login;
-    let mut id: i32 = -1;
-    let mut email = String::new();
-    let mut password = String::new();
-
+fn login_page(client: &mut Client) -> Result<Login, Box<dyn Error>> {
     loop {
-        match current_page {
-           Page::Login => {
-               email = read_input("email: ")?;
-               password = read_input("password: ")?;
-               let row = client.query("SELECT id, email , password FROM admin 
-                                      WHERE email=$1 AND password=$2 ", &[&email.trim(), &password.trim()])?;
-               println!("{}", row.len());
-               if row.len() > 0 {
-                   id = row[0].get("id");
-                   println!("Login complete id: {}", id); 
-                   current_page = Page::Home;
-               }else{
-                   println!("Login failed try again");
-               }
-           }
-           Page::Home => {
-               println!("1. Add new supplier");
-               println!("2. Add new product");
-               println!("3. Edit product");
-               println!("4. Delete product");
-               println!("5. Search for product");
-               println!("6. Add new discount");
-               println!("7. Assign discount");
-               println!("8. View discount history");
-               println!("9. Confirm order");
-               println!("10. List products with max orders");
-               println!("0. exit");
-               let choice = read_input("Input: ")?;
-               if choice == "0"{
-                   println!("goodbye :)");
-                   break;
-               }
-           }
+        let email = read_input("email: ")?;
+        let password = read_input("password: ")?;
+        let row = client.query("SELECT id, email FROM admin 
+                                WHERE email=$1 AND password=$2 ", &[&email, &password])?;
+        if row.len() == 1 {
+           let id: i32 = row[0].get("id");
+           println!("Login complete id: {}", id); 
+           return Ok(Login { id, email });
+        }else{
+           println!("Login failed try again");
+           panic!("Login failed TODO handle this");
         }
     }
+}
+
+fn admin_home (client: &mut Client, admin: &Login)-> Result<(), Box<dyn Error>>{
+    loop {
+        println!(" 1. Add new supplier");
+        println!(" 2. Add new product");
+        println!(" 3. Edit product");
+        println!(" 4. Delete product");
+        println!(" 5. Search for product");
+        println!(" 6. Add new discount");
+        println!(" 7. Assign discount");
+        println!(" 8. View discount history");
+        println!(" 9. Confirm order");
+        println!("10. List products with max orders");
+        println!(" 0. Log out");
+        let choice = read_input("Input: ")?;
+        match choice.as_str() {
+            "1"  => {}
+            "2"  => {}
+            "3"  => {}
+            "4"  => {}
+            "5"  => {}
+            "6"  => {}
+            "7"  => {}
+            "8"  => {}
+            "9"  => {}
+            "10" => {}
+            "0"  => {
+                println!("Logging out...");
+                break;
+            }
+            _ =>{}
+        }
+    }
+    Ok(())
+}
+
+
+fn admin(client: &mut Client) -> Result<(), Box<dyn Error>>{
+    let login = login_page(client)?;
+    admin_home(client, &login)?;
     Ok(()) 
 }
 
 fn read_input(label: &str) -> Result<String ,Box<dyn Error>>{
     let mut input = String::new();
-
     print!("{}", label);
     io::stdout().flush()?;
     io::stdin().read_line(&mut input)?;
-    
     Ok(input.trim().to_string())
 }
 
@@ -101,9 +101,29 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     println!("    Welcome to Hope store!");
     println!("Here we sell hopes and dreams :)");
-    
-    admin(&mut client)?;
 
+    loop {
+        println!("Log in as:");
+        println!("1. Admin");
+        println!("2. Customer");
+        println!("0. Exit");
+        let choice = read_input("Input: ")?;
+
+        match choice.as_str() {
+            "1" => {
+                admin(&mut client)?;
+            },
+            "2" => {
+            }
+            "0" => {
+                println!("Goodbye cruel world...");
+                break;
+            }
+            _ => {
+                println!("Invalid choice!!!");
+            }
+        }
+    }
     client.close()?;
     Ok(())
 }
