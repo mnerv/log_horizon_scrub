@@ -12,7 +12,13 @@ use postgres::{Client, NoTls};
 use std::error::Error;
 use std::io;
 use std::io::Write;
-fn admin(mut client: Client) -> Result<(), Box<dyn Error>>{
+
+enum Page{
+    Login,
+    Home,
+}
+
+fn admin(client: &mut Client) -> Result<(), Box<dyn Error>>{
 
 /* admin
  *
@@ -29,7 +35,48 @@ fn admin(mut client: Client) -> Result<(), Box<dyn Error>>{
  * confirm order 
  * see a list of products with maximum orders in each mont
  */
-   Ok(()) 
+    let mut current_page = Page::Login;
+    let mut id: i32 = -1;
+    let mut email = String::new();
+    let mut password = String::new();
+
+    loop {
+        match current_page {
+           Page::Login => {
+               email = read_input("email: ")?;
+               password = read_input("password: ")?;
+               let row = client.query("SELECT id, email , password FROM admin 
+                                      WHERE email=$1 AND password=$2 ", &[&email.trim(), &password.trim()])?;
+               println!("{}", row.len());
+               if row.len() > 0 {
+                   id = row[0].get("id");
+                   println!("Login complete id: {}", id); 
+                   current_page = Page::Home;
+               }else{
+                   println!("Login failed try again");
+               }
+           }
+           Page::Home => {
+               println!("1. Add new supplier");
+               println!("2. Add new product");
+               println!("3. Edit product");
+               println!("4. Delete product");
+               println!("5. Search for product");
+               println!("6. Add new discount");
+               println!("7. Assign discount");
+               println!("8. View discount history");
+               println!("9. Confirm order");
+               println!("10. List products with max orders");
+               println!("0. exit");
+               let choice = read_input("Input: ")?;
+               if choice == "0"{
+                   println!("goodbye :)");
+                   break;
+               }
+           }
+        }
+    }
+    Ok(()) 
 }
 
 fn read_input(label: &str) -> Result<String ,Box<dyn Error>>{
@@ -52,25 +99,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     client.execute(&format!("SET SCHEMA '{schema}'"), &[])?; 
 
-    let mut email = String::new();
-    let mut password = String::new();
-
     println!("    Welcome to Hope store!");
     println!("Here we sell hopes and dreams :)");
     
-    email = read_input("email: ")?;
-    password = read_input("password: ")?;
-
-    let row = client.query("SELECT id, email , password FROM admin 
-                           WHERE email=$1 AND password=$2 ", &[&email.trim(), &password.trim()])?;
-    println!("{}", row.len());
-    if row.len() > 0 {
-        let id: i32 = row[0].get("id");
-        println!("Login complete id: {}", id); 
-    }else{
-        println!("Login failed");
-        panic!("yoooooooo this incident will be reported");
-    }
+    admin(&mut client)?;
 
     client.close()?;
     Ok(())
