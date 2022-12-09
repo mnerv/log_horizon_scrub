@@ -10,8 +10,37 @@
  */
 use postgres::{Client, NoTls};
 use std::error::Error;
-//use std::io;
-//use std::io::Write;
+use std::io;
+use std::io::Write;
+fn admin(mut client: Client) -> Result<(), Box<dyn Error>>{
+
+/* admin
+ *
+ * TODO:
+ * Login 
+ * add supplier 
+ * add product
+ * edit product 
+ * delete product 
+ * list products - search
+ * add discounts 
+ * assign discounts 
+ * show discount history
+ * confirm order 
+ * see a list of products with maximum orders in each mont
+ */
+   Ok(()) 
+}
+
+fn read_input(label: &str) -> Result<String ,Box<dyn Error>>{
+    let mut input = String::new();
+
+    print!("{}", label);
+    io::stdout().flush()?;
+    io::stdin().read_line(&mut input)?;
+    
+    Ok(input.trim().to_string())
+}
 
 fn main() -> Result<(), Box<dyn Error>> {
     let host = dotenv::var("PG_HOST")?;
@@ -21,26 +50,26 @@ fn main() -> Result<(), Box<dyn Error>> {
     let schema   = dotenv::var("PG_SCHEMA")?;
     let mut client = Client::connect(&format!("host={host} user={user} password='{password}' dbname={db}"), NoTls)?;
 
-    //let mut name = String::new();
-    //let mut password = String::new();
+    client.execute(&format!("SET SCHEMA '{schema}'"), &[])?; 
 
-    //println!("    Welcome to Hope store!");
-    //println!("Here we sell hopes and dreams :)");
-    //print!("name: ");
-    //io::stdout().flush()?;
-    //io::stdin().read_line(&mut name)?;
-    //print!("password: ");
-    //io::stdout().flush()?;
-    //io::stdin().read_line(&mut password)?;
+    let mut email = String::new();
+    let mut password = String::new();
 
-    //println!("Login: {name}");
+    println!("    Welcome to Hope store!");
+    println!("Here we sell hopes and dreams :)");
+    
+    email = read_input("email: ")?;
+    password = read_input("password: ")?;
 
-    client.execute(&format!("SET SCHEMA '{schema}'"), &[])?;
-    for row in client.query("SELECT id, firstname, lastname FROM student", &[])? {
-        let id: i32 = row.get(0);
-        let firstname: &str = row.get(1);
-        let lastname: &str = row.get(2);
-        println!("found: {} {} {}", id, firstname, lastname);
+    let row = client.query("SELECT id, email , password FROM admin 
+                           WHERE email=$1 AND password=$2 ", &[&email.trim(), &password.trim()])?;
+    println!("{}", row.len());
+    if row.len() > 0 {
+        let id: i32 = row[0].get("id");
+        println!("Login complete id: {}", id); 
+    }else{
+        println!("Login failed");
+        panic!("yoooooooo this incident will be reported");
     }
 
     client.close()?;
