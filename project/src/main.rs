@@ -41,6 +41,7 @@ fn login_page(client: &mut Client) -> Result<Login, Box<dyn Error>> {
 
 fn admin_home (client: &mut Client, admin: &Login)-> Result<(), Box<dyn Error>>{
     loop {
+        println!("Hope store admin page");
         println!(" 1. Add new supplier");
         println!(" 2. Add new product");
         println!(" 3. Edit product");
@@ -64,13 +65,13 @@ fn admin_home (client: &mut Client, admin: &Login)-> Result<(), Box<dyn Error>>{
             "8"  => {}
             "9"  => {}
             "10" => {}
-            "0"  => {
-                println!("Logging out...");
-                break;
+            "0"  => break,
+            _ => {
+                println!("Invalid input try again :/\n");
             }
-            _ =>{}
         }
     }
+    println!("Logging out...");
     Ok(())
 }
 
@@ -95,7 +96,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     let password = dotenv::var("PG_PASSWORD")?;
     let db       = dotenv::var("PG_DB")?;
     let schema   = dotenv::var("PG_SCHEMA")?;
+
+    print!("Connecting to database... ");
+    io::stdout().flush()?;
     let mut client = Client::connect(&format!("host={host} user={user} password='{password}' dbname={db}"), NoTls)?;
+    println!("connected!");
 
     client.execute(&format!("SET SCHEMA '{schema}'"), &[])?; 
 
@@ -115,15 +120,13 @@ fn main() -> Result<(), Box<dyn Error>> {
             },
             "2" => {
             }
-            "0" => {
-                println!("Goodbye cruel world...");
-                break;
-            }
+            "0" => break,
             _ => {
                 println!("Invalid choice!!!");
             }
         }
     }
+    println!("Goodbye cruel world...");
     client.close()?;
     Ok(())
 }
