@@ -1,4 +1,6 @@
-use std::fs::read;
+use std::any::Any;
+use std::{error::Error, io::Write};
+
 /**
  * @file   main.rs
  * @author Pratchaya Khansomboon (me@mononerv.dev)
@@ -9,8 +11,6 @@ use std::fs::read;
  *
  * @copyright Copyright (c) 2022
  */
-use std::{error::Error, io::Write};
-
 mod command;
 mod hope;
 mod service;
@@ -30,11 +30,20 @@ fn read_input(label: &str) -> Result<String, Box<dyn Error>> {
     Ok(input.trim().to_string())
 }
 
-fn run_command<C: Command>(
+fn run_command<C: Command, T: Any>(
     store: &mut Hope,
     mut command: C,
-) -> Result<Option<Box<(dyn std::any::Any + 'static)>>, Box<(dyn std::error::Error + 'static)>> {
-    return command.run(store);
+) -> Option<Box<(dyn Any + 'static)>> {
+    return match command.run(store) {
+        Ok(value) => match Some(value).downcast_ref::<T>() {
+            Some(cast) => cast,
+            _ => None,
+        },
+        Err(err) => {
+            eprintln!("{}", err);
+            None
+        }
+    };
 }
 
 fn admin_create_supplier(store: &mut Hope) -> Result<(), Box<dyn Error>> {
@@ -53,14 +62,11 @@ fn admin_create_supplier(store: &mut Hope) -> Result<(), Box<dyn Error>> {
         telephone,
     };
 
-    let maybe_id = run_command(store, address_command)?;
+    let maybe_id = run_command::<AddAddressCommand, i32>(store, address_command);
 
     let address_id = match maybe_id {
-        Some(value) => match value.downcast_ref::<i32>() {
-            Some(v) => v.to_owned(),
-            _ => 0,
-        },
-        None => 0,
+        Some(cast) => cast.to_owned(),
+        _ => 0,
     };
 
     let add_supplier = AddSupplierCommand {
@@ -70,6 +76,31 @@ fn admin_create_supplier(store: &mut Hope) -> Result<(), Box<dyn Error>> {
     };
     run_command(store, add_supplier)?;
     Ok(())
+}
+
+fn AdminCreateProduct(store: &mut Hope) -> Result<(), Box<dyn Error>> {
+    let name = read_input("name: ")?;
+    let quantity = read_input("quntity: ")?;
+    let price = read_input("price: ")?;
+    let supplier_id_str = read_input("supplier id: ")?;
+    let supplier_id = supplier_id_str.parse::<i32>()?;
+
+    let add_cmd = AddProductCommand {
+        supplier_id,
+        name,
+        quantity,
+        price,
+    };
+
+    let succeded = run_command(store, add_cmd);
+
+    let 1 = match succeded {
+        Some(value) => match value.downcast_ref::<i32>() {
+            Some(cast) => cast.to_owned(),
+            _ => 0,
+        },
+        _ => 0,
+    };
 }
 
 fn admin_home(store: &mut Hope) -> Result<(), Box<dyn Error>> {
@@ -87,7 +118,7 @@ fn admin_home(store: &mut Hope) -> Result<(), Box<dyn Error>> {
         println!(" 0. Log out");
         let choice = read_input("Input: ")?;
         match choice.as_str() {
-            "1" => {}
+            "1" => admin_create_supplier(store),
             "2" => {}
             "3" => {}
             "4" => {}
