@@ -14,6 +14,8 @@ mod command;
 mod service;
 mod hope;
 
+use hope::LockStatus;
+
 use crate::command::Command;
 use crate::service::*;
 use crate::hope::Hope;
@@ -32,6 +34,65 @@ fn run_command<C: Command>(store: &mut Hope, mut command: C) {
         Ok(_) => (),
         Err(err) => eprintln!("{}", err)
     }
+}
+
+fn admin_home (client: &mut Hope)-> Result<(), Box<dyn Error>>{
+    loop {
+        println!(" 1. Add new supplier");
+        println!(" 2. Add new product");
+        println!(" 3. Edit product");
+        println!(" 4. Delete product");
+        println!(" 5. Search for product");
+        println!(" 6. Add new discount");
+        println!(" 7. Assign discount");
+        println!(" 8. View discount history");
+        println!(" 9. Confirm order");
+        println!("10. List products with max orders");
+        println!(" 0. Log out");
+        let choice = read_input("Input: ")?;
+        match choice.as_str() {
+            "1"  => {}
+            "2"  => {}
+            "3"  => {}
+            "4"  => {}
+            "5"  => {}
+            "6"  => {}
+            "7"  => {}
+            "8"  => {}
+            "9"  => {}
+            "10" => {}
+            "0"  => {
+                println!("Logging out...");
+                break;
+            }
+            _ =>{}
+        }
+    }
+    Ok(())
+}
+
+fn admin(store: &mut Hope) -> Result<(), Box<dyn Error>> {
+    // Login
+    loop {
+        let email = read_input("email: ")?;
+        let password = read_input("password: ")?;
+        let login_command = LoginCommand{
+            mode: HopeMode::Admin,
+            email, password,
+        };
+        run_command(store, login_command);
+
+        if store.status == LockStatus::LogIn {
+            break;
+        }
+    }
+
+    admin_home(store)?;
+    Ok(())
+}
+
+fn customer(store: &mut Hope) -> Result<(), Box<dyn Error>> {
+    Ok(())
 }
 
 fn main() {
@@ -55,14 +116,21 @@ _  __  / / /_/ /_  /_/ /  __/    _(__  )/ /_ / /_/ /  /   /  __/
                /_/                 Hopes and dreams"#.trim_start_matches('\n');
 
     let mut store = Hope::new();
-    let login = LoginCommand{
-        mode: HopeMode::Admin,
-        email: "eric@hopestore.se".to_string(),
-        password: "hello".to_string()
-    };
-    let logout = LogoutCommand{};
-    run_command(&mut store, login);
-    println!("{}", store.user.to_string());
-    run_command(&mut store, logout);
-    println!("{}", store.is_login());
+    loop {
+        println!("Log in as:");
+        println!("1. Admin");
+        println!("2. Customer");
+        println!("0. Exit");
+        let choice = read_input("Input: ").expect("Can't read input");
+
+        match choice.as_str() {
+            "1" => admin(&mut store).expect(""),
+            "2" => customer(&mut store).expect(""),
+            "0" => break,
+            _ => {
+                println!("Invalid choice!!!");
+            }
+        }
+    }
+    println!("Goodbye cruel world...");
 }

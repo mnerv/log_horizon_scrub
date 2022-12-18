@@ -6,10 +6,16 @@ pub enum StoreMode {
     StateMachine,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum HopeMode {
     Admin,
     Customer,
+}
+
+#[derive(Copy, Clone, PartialEq)]
+pub enum LockStatus {
+    LogIn,
+    LogOut,
 }
 
 pub struct Login {
@@ -28,13 +34,15 @@ impl Login {
 }
 
 pub struct Hope {
-    pub user: Login
+    pub user: Login,
+    pub status: LockStatus,
 }
 
 impl Hope {
     pub fn new() -> Hope {
         Hope {
-            user: Login{id: 0, email: String::new(), mode: HopeMode::Customer}
+            user: Login{id: 0, email: String::new(), mode: HopeMode::Customer},
+            status: LockStatus::LogOut
         }
     }
 
