@@ -2,7 +2,7 @@
  * @file   tables.sql
  * @author Pratchaya Khansomboon (me@mononerv.dev)
  * @author Eric Lundin
- * @brief  Database tables for online store application. This contain 
+ * @brief  Database tables for online store application.
  * @date   2022-12-09
  *
  * @copyright Copyright (c) 2022
@@ -28,8 +28,6 @@ CREATE TABLE supplier(
     admin_id INT NOT NULL,
     address_id INT NOT NULL UNIQUE,
     name VARCHAR(30) NOT NULL,
-    telephone CHAR(10) NOT NULL,
-    address VARCHAR(30) NOT NULL,
     PRIMARY KEY (id),
     FOREIGN KEY (admin_id) REFERENCES admin(id) on UPDATE CASCADE,
     FOREIGN KEY (address_id) REFERENCES address(id) on UPDATE CASCADE
@@ -58,8 +56,9 @@ CREATE TABLE discount(
 CREATE TABLE product(
     id SERIAL NOT NULL UNIQUE,
     supplier_id INT NOT NULL,
-    quantity INT NOT NULL,
     name VARCHAR(30) NOT NULL,
+    description VARCHAR(512) NOT NULL,
+    quantity INT NOT NULL,
     price NUMERIC(16,2) NOT NULL,
     PRIMARY KEY(id),
     FOREIGN KEY (supplier_id) REFERENCES supplier(id) ON UPDATE CASCADE ON DELETE CASCADE
@@ -74,14 +73,14 @@ CREATE TABLE shopping_list(
 );
 
 CREATE TABLE orders(
-    id SERIAL NOT NULL UNIQUE, 
+    id SERIAL NOT NULL UNIQUE,
     customer_id INT NOT NULL,
-    admin_id INT,
+    confirmed_by_admin INT NULL,
     created DATE NOT NULL,
     status VARCHAR(30) NOT NULL,
     PRIMARY KEY(id),
     FOREIGN KEY (customer_id) REFERENCES customer(id) ON UPDATE CASCADE ON DELETE CASCADE,
-    FOREIGN KEY (admin_id) REFERENCES admin(id) ON UPDATE CASCADE ON DELETE CASCADE
+    FOREIGN KEY (confirmed_by_admin) REFERENCES admin(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
 CREATE TABLE discount_product(
