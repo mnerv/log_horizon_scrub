@@ -68,6 +68,12 @@ fn admin_create_product() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+fn list_all_products() -> Result<(), Box<dyn Error>> {
+    let list_cmd = ListProductsCommand{};
+    list_cmd.run()?;
+    Ok(())
+}
+
 fn admin_home() -> Result<(), Box<dyn Error>> {
     loop {
         println!(" 1. Add new supplier");
@@ -107,14 +113,28 @@ fn admin_main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+fn list_products() -> Result<(), Box<dyn Error>>{
+    Ok(())
+}
+
 fn customer_main() -> Result<(), Box<dyn Error>> {
-    let email = read_input("email: ").unwrap();
-    let password = read_input("password: ").unwrap();
+        let mut customer = Customer::default();
+    loop{
+        let email = read_input("email: ").unwrap();
+        let password = read_input("password: ").unwrap();
+        let login = LoginCustomerCommand{email, password};
 
-    let login = LoginCustomerCommand{email, password};
-    let mut customer = Customer::default();
-    login.run(&mut customer)?;
+        match login.run(&mut customer){
+            Ok(()) => break,
+            Err(error) => {
+                println!("{}", error);
+                let input = read_input("do you want to try again? y/n")?;
+                if input == "n".to_string(){break;} 
+            },
+        };
+    }
 
+    if !customer.is_login(){return Ok(());}
     loop {
         println!("1. Browse product");
         println!("2. Search product");
@@ -122,7 +142,22 @@ fn customer_main() -> Result<(), Box<dyn Error>> {
         println!("4. Show shopping cart");
         println!("5. Show orders");
         println!("6. Delete an order");
-        break;
+        println!("0. Log out");
+
+        let input = read_input(": ")?;
+        match input.as_str() {
+            "1" => {list_all_products()?;},
+            "2" => {},
+            "3" => {},
+            "4" => {},
+            "5" => {},
+            "6" => {},
+            "0" => {
+                println!("Logging out.....");
+                break;        
+            },
+            _=>{},
+        }
     }
     Ok(())
 }

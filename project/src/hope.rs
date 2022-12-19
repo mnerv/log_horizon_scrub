@@ -16,6 +16,27 @@ pub enum LockStatus {
 }
 
 #[derive(Clone)]
+pub struct Product {
+    pub id: i32,
+    pub supplier_id: i32,
+    pub name: String,
+    pub description: String,
+    pub quantity: i32,
+    pub price: f64,
+}
+impl Product {
+    fn new (
+    id: i32,
+    supplier_id: i32,
+    name: String,
+    description: String,
+    quantity: i32,
+    price: f64) -> Product{
+        Product { id , supplier_id,  name,  description,  quantity, price }
+    }
+}
+
+#[derive(Clone)]
 pub struct Address {
     id: i32,
     street: String,

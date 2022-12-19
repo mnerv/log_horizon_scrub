@@ -1,6 +1,8 @@
 use postgres::{Client, NoTls};
+use postgres::types::FromSql;
 use std::{error::Error, io::Write};
 use std::{io, io::ErrorKind};
+use std::convert::TryInto;
 
 use crate::command::*;
 use crate::hope::*;
@@ -205,5 +207,25 @@ impl Command for AddProductCommand {
                 "Failed to create product",
             )))
         }
+    }
+}
+
+pub struct ListProductsCommand ;
+impl Command for ListProductsCommand {
+    fn run(&self) -> Result<(), Box<dyn Error>> {
+        let mut db = connect_db()?;
+
+        for row in db.query("SELECT id, supplier_id, name, description, quantity, CAST(price AS DOUBLE PRECISION) as price FROM product", &[])?{
+            let product = Product{
+                id: row.get(0),
+                supplier_id: row.get(1),
+                name: row.get(2),
+                description: row.get(3),
+                quantity: row.get(4),
+                price: row.get(5),
+            };
+            println!("{} {} {} {} {} {}", product.id, product.supplier_id, product.name, product.description, product.quantity, product.price);
+        }
+        Ok(())
     }
 }
