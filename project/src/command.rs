@@ -1,7 +1,16 @@
-use crate::hope::Hope;
-use std::any::Any;
 use std::error::Error;
 
-pub trait Command {
-    fn run(&mut self, store: &mut Hope) -> Result<Option<Box<dyn Any>>, Box<dyn Error>>;
+use crate::hope::{Customer, Admin};
+
+pub trait CustomerCommand {
+    fn run(&self, customer: &mut Customer) -> Result<(), Box<dyn Error>>;
 }
+
+pub trait AdminCommand {
+    fn run(&self, admin: &mut Admin) -> Result<(), Box<dyn Error>>;
+}
+
+pub trait Command {
+    fn run(&self) -> Result<(), Box<dyn Error>>;
+}
+

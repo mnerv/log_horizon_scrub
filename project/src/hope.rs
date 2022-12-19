@@ -1,6 +1,3 @@
-use postgres::Client;
-use std::error::Error;
-
 pub enum StoreMode {
     Command,
     StateMachine,
@@ -18,55 +15,124 @@ pub enum LockStatus {
     LogOut,
 }
 
-pub struct Login {
+#[derive(Clone)]
+pub struct Address {
     id: i32,
-    email: String,
-    mode: HopeMode,
+    street: String,
+    city: String,
+    country: String,
+    telephone: String
 }
-impl Login {
-    pub fn new(id: i32, email: String, mode: HopeMode) -> Login {
-        Login { id, email, mode }
+impl Address {
+    pub fn new(id: i32, street: String, city: String, country: String, telephone: String) -> Address {
+        Address { id, street, city, country, telephone }
     }
 
-    pub fn id(&self) -> i32 {
+    pub fn default() -> Address {
+        Address {
+            id: 0,
+            street: String::new(),
+            city: String::new(),
+            country: String::new(),
+            telephone: String::new(),
+        }
+    }
+}
+
+pub trait LoginTrait {
+    fn id(&self) -> i32;
+    fn logout(&mut self);
+    fn is_login(&mut self) -> bool;
+    fn to_string(&self) -> String;
+}
+
+#[derive(Clone)]
+pub struct Admin {
+    id: i32,
+    email: String,
+}
+impl Admin {
+    pub fn new(id: i32, email: String) -> Admin {
+        Admin { id, email }
+    }
+
+    pub fn default() -> Admin {
+        Admin { id: 0, email: "".to_string() }
+    }
+
+    pub fn login(&mut self, admin: &mut Admin) {
+        self.id = admin.id;
+        self.email = admin.email.to_owned();
+    }
+}
+impl LoginTrait for Admin {
+    fn id(&self) -> i32 {
         self.id
     }
 
-    pub fn to_string(&self) -> String {
-        format!("id: {}, email: {}", self.id, self.email).to_string()
+    fn logout(&mut self) {
+        self.id = 0;
+        self.email = String::new();
+    }
+
+    fn is_login(&mut self) -> bool {
+        self.id != 0 || !self.email.is_empty()
+    }
+
+    fn to_string(&self) -> String {
+        format!("id: {}, email: {}", self.id, self.email)
     }
 }
 
-pub struct Hope {
-    pub user: Login,
-    pub status: LockStatus,
+#[derive(Clone)]
+pub struct Customer {
+    id: i32,
+    first_name: String,
+    last_name: String,
+    email: String,
+    address: Address
 }
+impl Customer {
+    pub fn new(id: i32, first_name: String, last_name: String, email: String, address: Address) -> Customer {
+        Customer { id, first_name, last_name, email, address }
+    }
 
-impl Hope {
-    pub fn new() -> Hope {
-        Hope {
-            user: Login {
-                id: 0,
-                email: String::new(),
-                mode: HopeMode::Customer,
-            },
-            status: LockStatus::LogOut,
+    pub fn default() -> Customer {
+        Customer {
+            id: 0,
+            first_name: "".to_string(),
+            last_name: "".to_string(),
+            email: "".to_string(),
+            address: Address::default(),
         }
     }
 
-    pub fn login(&mut self, user: Login) {
-        self.user = user;
-        self.status = LockStatus::LogIn;
+    pub fn login(&mut self, customer: &Customer) {
+        self.id = customer.id;
+        self.first_name = customer.first_name.to_owned();
+        self.last_name = customer.last_name.to_owned();
+        self.email = customer.email.to_owned();
+        self.address = customer.address.to_owned();
+    }
+}
+impl LoginTrait for Customer {
+    fn id(&self) -> i32 {
+        self.id
     }
 
-    pub fn logout(&mut self) {
-        self.user.id = 0;
-        self.user.email = String::new();
-        self.user.mode = HopeMode::Customer;
-        self.status = LockStatus::LogOut;
+    fn logout(&mut self) {
+        self.id = 0;
+        self.first_name = String::new();
+        self.last_name  = String::new();
+        self.email   = String::new();
+        self.address = Address::default();
     }
 
-    pub fn is_login(&mut self) -> bool {
-        self.user.id != 0 && !self.user.email.is_empty()
+    fn is_login(&mut self) -> bool {
+        self.id != 0 && !self.email.is_empty()
+    }
+
+    fn to_string(&self) -> String {
+        format!("id: {}, email: {}", self.id, self.email)
     }
 }

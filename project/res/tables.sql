@@ -36,8 +36,8 @@ CREATE TABLE supplier(
 CREATE TABLE customer(
     id SERIAL NOT NULL UNIQUE,
     address_id INT NOT NULL UNIQUE,
-    firstname VARCHAR(30) NOT NULL,
-    lastname VARCHAR(30) NOT NULL,
+    first_name VARCHAR(30) NOT NULL,
+    last_name VARCHAR(30) NOT NULL,
     email VARCHAR(30) NOT NULL,
     password VARCHAR(30) NOT NULL,
     PRIMARY KEY(id),

@@ -15,11 +15,10 @@ mod command;
 mod hope;
 mod service;
 
-use hope::LockStatus;
+use command::CustomerCommand;
+use hope::*;
 
 use crate::command::Command;
-use crate::hope::Hope;
-use crate::hope::HopeMode;
 use crate::service::*;
 
 fn read_input(label: &str) -> Result<String, Box<dyn Error>> {
@@ -30,25 +29,7 @@ fn read_input(label: &str) -> Result<String, Box<dyn Error>> {
     Ok(input.trim().to_string())
 }
 
-fn run_command<C: Command, T: Any>(
-    store: &mut Hope,
-    mut command: C,
-) -> Option<Box<(dyn Any + 'static)>> {
-    return match command.run(store) {
-        Ok(value) => match Some(value).downcast_ref::<T>() {
-            Some(cast) => cast,
-            _ => None,
-        },
-        Err(err) => {
-            eprintln!("{}", err);
-            None
-        }
-    };
-}
-
-fn admin_create_supplier(store: &mut Hope) -> Result<(), Box<dyn Error>> {
-    let admin_id = store.user.id();
-
+fn admin_create_supplier() -> Result<(), Box<dyn Error>> {
     let name = read_input("name: ")?;
 
     let street = read_input("street: ")?;
@@ -62,23 +43,16 @@ fn admin_create_supplier(store: &mut Hope) -> Result<(), Box<dyn Error>> {
         telephone,
     };
 
-    let maybe_id = run_command::<AddAddressCommand, i32>(store, address_command);
-
-    let address_id = match maybe_id {
-        Some(cast) => cast.to_owned(),
-        _ => 0,
-    };
-
-    let add_supplier = AddSupplierCommand {
-        admin_id,
-        address_id,
-        name,
-    };
-    run_command(store, add_supplier)?;
+    //let add_supplier = AddSupplierCommand {
+    //    admin_id,
+    //    address_id: maybe_address.unwrap().to_owned(),
+    //    name,
+    //};
+    //run_command(add_supplier);
     Ok(())
 }
 
-fn AdminCreateProduct(store: &mut Hope) -> Result<(), Box<dyn Error>> {
+fn admin_create_product() -> Result<(), Box<dyn Error>> {
     let name = read_input("name: ")?;
     let quantity = read_input("quntity: ")?;
     let price = read_input("price: ")?;
@@ -92,18 +66,11 @@ fn AdminCreateProduct(store: &mut Hope) -> Result<(), Box<dyn Error>> {
         price,
     };
 
-    let succeded = run_command(store, add_cmd);
-
-    let 1 = match succeded {
-        Some(value) => match value.downcast_ref::<i32>() {
-            Some(cast) => cast.to_owned(),
-            _ => 0,
-        },
-        _ => 0,
-    };
+    //let succeded = run_command(add_cmd);
+    Ok(())
 }
 
-fn admin_home(store: &mut Hope) -> Result<(), Box<dyn Error>> {
+fn admin_home() -> Result<(), Box<dyn Error>> {
     loop {
         println!(" 1. Add new supplier");
         println!(" 2. Add new product");
@@ -118,8 +85,8 @@ fn admin_home(store: &mut Hope) -> Result<(), Box<dyn Error>> {
         println!(" 0. Log out");
         let choice = read_input("Input: ")?;
         match choice.as_str() {
-            "1" => admin_create_supplier(store),
-            "2" => {}
+            "1" => admin_create_supplier()?,
+            "2" => admin_create_product()?,
             "3" => {}
             "4" => {}
             "5" => {}
@@ -138,28 +105,18 @@ fn admin_home(store: &mut Hope) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn admin(store: &mut Hope) -> Result<(), Box<dyn Error>> {
-    // Login
-    loop {
-        let email = read_input("email: ")?;
-        let password = read_input("password: ")?;
-        let login_command = LoginCommand {
-            mode: HopeMode::Admin,
-            email,
-            password,
-        };
-        run_command(store, login_command);
-
-        if store.status == LockStatus::LogIn {
-            break;
-        }
-    }
-
-    admin_home(store)?;
+fn admin_main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn customer(store: &mut Hope) -> Result<(), Box<dyn Error>> {
+fn customer_main() -> Result<(), Box<dyn Error>> {
+    let email = read_input("email: ").unwrap();
+    let password = read_input("password: ").unwrap();
+
+    let login = LoginCustomerCommand{email, password};
+    let mut customer = Customer::default();
+    login.run(&mut customer)?;
+
     loop {
         println!("1. Browse product");
         println!("2. Search product");
@@ -167,21 +124,26 @@ fn customer(store: &mut Hope) -> Result<(), Box<dyn Error>> {
         println!("4. Show shopping cart");
         println!("5. Show orders");
         println!("6. Delete an order");
+        break;
     }
     Ok(())
 }
 
-fn signup(store: &mut Hope) -> Result<(), Box<dyn Error>> {
-    let email = read_input("email: ")?;
-    let password = read_input("password: ")?;
-    let first_name = read_input("first name: ")?;
-    let last_name = read_input("last name: ")?;
-    let city = read_input("city: ")?;
-    let street = read_input("street: ")?;
-    let country = read_input("country: ")?;
-    let telephone = read_input("telephone nr: ")?;
+fn register_main() {
+    let clear = ClearCommand{};
+    clear.run().expect("");
 
-    let signup_command = SignupCommand {
+    println!("Register as new customer");
+    let email = read_input("email: ").unwrap();
+    let password = read_input("password: ").unwrap();
+    let first_name = read_input("first name: ").unwrap();
+    let last_name = read_input("last name: ").unwrap();
+    let city = read_input("city: ").unwrap();
+    let street = read_input("street: ").unwrap();
+    let country = read_input("country: ").unwrap();
+    let telephone = read_input("telephone nr: ").unwrap();
+
+    let signup_command = RegiserCustomerCommand {
         first_name,
         last_name,
         email,
@@ -191,9 +153,8 @@ fn signup(store: &mut Hope) -> Result<(), Box<dyn Error>> {
         country,
         telephone,
     };
-
-    run_command(store, signup_command);
-    Ok(())
+    let mut customer = Customer::default();
+    signup_command.run(&mut customer).expect("");
 }
 
 fn main() {
@@ -219,19 +180,18 @@ _  __  / / /_/ /_  /_/ /  __/    _(__  )/ /_ / /_/ /  /   /  __/
                /_/                 Hopes and dreams"#
         .trim_start_matches('\n');
 
-    let mut store = Hope::new();
     loop {
         println!("Log in as:");
         println!("1. Admin");
         println!("2. Customer");
-        println!("3. Sign up");
+        println!("3. Register as customer");
         println!("0. Exit");
         let choice = read_input("Input: ").expect("Can't read input");
 
         match choice.as_str() {
-            "1" => admin(&mut store).expect(""),
-            "2" => customer(&mut store).expect(""),
-            "3" => signup(&mut store).expect(""),
+            "1" => admin_main().expect(""),
+            "2" => customer_main().expect(""),
+            "3" => register_main(),
             "0" => break,
             _ => {
                 println!("Invalid choice!!!");
