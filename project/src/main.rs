@@ -1,6 +1,3 @@
-use std::any::Any;
-use std::{error::Error, io::Write};
-
 /**
  * @file   main.rs
  * @author Pratchaya Khansomboon (me@mononerv.dev)
@@ -11,6 +8,7 @@ use std::{error::Error, io::Write};
  *
  * @copyright Copyright (c) 2022
  */
+use std::{error::Error, io::Write};
 mod command;
 mod hope;
 mod service;
