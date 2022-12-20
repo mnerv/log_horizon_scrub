@@ -8,7 +8,7 @@ We sell hopes and dreams.
 
 ## Development
 
-Create `.env` file and use the template below to fill in the required secrets
+Create `.env` file in the project root directory and use the template below to fill in the required secrets
 
 ```.env
 PG_HOST=host               # Defaults to localhost

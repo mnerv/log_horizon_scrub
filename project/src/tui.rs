@@ -260,6 +260,7 @@ pub fn tui_main() {
             "3" => register_main(),
             "0" => break,
             _ => {
+                ClearCommand{}.run().unwrap();
                 println!("Invalid choice!!!");
             }
         }

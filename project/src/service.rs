@@ -15,11 +15,11 @@ use crate::command::*;
 use crate::hope::*;
 
 pub fn connect_db() -> Result<Client, Box<dyn Error>> {
-    let host = dotenv::var("PG_HOST")?;
-    let user = dotenv::var("PG_USER")?;
-    let pwd = dotenv::var("PG_PASSWORD")?;
-    let db = dotenv::var("PG_DB")?;
-    let schema = dotenv::var("PG_SCHEMA")?;
+    let host = dotenv::var("PG_HOST").unwrap_or_else(|_| "localhost".to_string());
+    let user = dotenv::var("PG_USER").unwrap_or_else(|_| "postgres".to_string());
+    let pwd = dotenv::var("PG_PASSWORD").unwrap_or_else(|_| "postgres".to_string());
+    let db = dotenv::var("PG_DB").unwrap_or_else(|_| "postgres".to_string());
+    let schema = dotenv::var("PG_SCHEMA").unwrap_or_else(|_| "public".to_string());
 
     std::io::stdout().flush()?;
     let mut client = Client::connect(
