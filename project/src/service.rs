@@ -1,3 +1,12 @@
+/**
+ * @file   service.rs
+ * @author Pratchaya Khansomboon (me@mononerv.dev)
+ * @author Eric Lundin
+ * @brief  Hope store commands
+ * @date   2022-12-20
+ *
+ * @copyright Copyright (c) 2022
+ */
 use postgres::{Client, NoTls};
 use std::{error::Error, io::Write};
 use std::{io, io::ErrorKind};

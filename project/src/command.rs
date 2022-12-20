@@ -1,3 +1,11 @@
+/**
+ * @file   command.rs
+ * @author Pratchaya Khansomboon (me@mononerv.dev)
+ * @brief  Comand traits
+ * @date   2022-12-20
+ *
+ * @copyright Copyright (c) 2022
+ */
 use std::error::Error;
 
 use crate::hope::{Customer, Admin};

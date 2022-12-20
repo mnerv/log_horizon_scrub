@@ -1,3 +1,12 @@
+/**
+ * @file   hope.rs
+ * @author Pratchaya Khansomboon (me@mononerv.dev)
+ * @author Eric Lundin
+ * @brief  Hope store data storage
+ * @date   2022-12-20
+ *
+ * @copyright Copyright (c) 2022
+ */
 pub const BANNER_SLANTED: &'static str = r#"
     __  __                         __                
    / / / /___  ____  ___     _____/ /_____  ________ 
