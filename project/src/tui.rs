@@ -16,8 +16,8 @@ use crate::service::*;
 fn read_input(label: &str) -> String {
     let mut input = String::new();
     print!("{}", label);
-    std::io::stdout().flush().expect("Failed to flush");
-    std::io::stdin().read_line(&mut input).expect("Failed to read input");
+    std::io::stdout().flush().unwrap();
+    std::io::stdin().read_line(&mut input).unwrap();
     input.trim().to_string()
 }
 
@@ -25,11 +25,13 @@ fn admin_create_supplier() -> Result<(), Box<dyn Error>> {
     let name = read_input("name: ");
 
     let street = read_input("street: ");
+    let postcode = read_input("postcode: ");
     let city = read_input("city: ");
     let country = read_input("country: ");
     let telephone = read_input("telephone nr: ");
     let address_command = AddAddressCommand {
         street,
+        postcode,
         city,
         country,
         telephone,
@@ -46,14 +48,16 @@ fn admin_create_supplier() -> Result<(), Box<dyn Error>> {
 
 fn admin_create_product() -> Result<(), Box<dyn Error>> {
     let name = read_input("name: ");
-    let quantity = read_input("quntity: ");
-    let price = read_input("price: ");
-    let supplier_id_str = read_input("supplier id: ");
-    let supplier_id = supplier_id_str.parse::<i32>()?;
+    let description = read_input("description: ");
+
+    let quantity = read_input("quntity: ").parse::<i32>()?;
+    let price = read_input("price: ").parse::<f64>()?;
+    let supplier_id = read_input("supplier id: ").parse::<i32>()?;
 
     let add_cmd = AddProductCommand {
         supplier_id,
         name,
+        description,
         quantity,
         price,
     };
@@ -129,7 +133,7 @@ fn admin_main() {
             Err(error) => {
                 println!("{}", error);
                 let input = read_input("Do you want to try again? Y/n: ");
-                if input.eq_ignore_ascii_case("n") || !input.eq_ignore_ascii_case("y") {
+                if input.eq_ignore_ascii_case("n") || !input.eq_ignore_ascii_case("y") || input.is_empty() {
                     break;
                 }
             },
@@ -146,12 +150,11 @@ fn admin_main() {
     admin_home(&mut admin);
 }
 
-fn list_all_products() {
+fn list_all_products() -> Result<(), Box<dyn Error>> {
     let list_cmd = ListProductsCommand{};
-    match list_cmd.run() {
-        Ok(_) => {},
-        Err(err) => eprintln!("{}", err)
-    }
+    let str = list_cmd.run()?;
+    println!("{}", str);
+    Ok(())
 }
 
 fn customer_main() {
@@ -165,8 +168,8 @@ fn customer_main() {
             Ok(()) => break,
             Err(error) => {
                 println!("{}", error);
-                let input = read_input("do you want to try again? y/n");
-                if input == "n" {
+                let input = read_input("Do you want to try again? Y/n: ");
+                if input.eq_ignore_ascii_case("n") || !input.eq_ignore_ascii_case("y") || input.is_empty() {
                     break;
                 }
             },
@@ -176,7 +179,21 @@ fn customer_main() {
     if !customer.is_login() {
         return;
     }
+
+    let banner_slanted: &'static str = r#"
+    __  __                         __                
+   / / / /___  ____  ___     _____/ /_____  ________ 
+  / /_/ / __ \/ __ \/ _ \   / ___/ __/ __ \/ ___/ _ \
+ / __  / /_/ / /_/ /  __/  (__  ) /_/ /_/ / /  /  __/
+/_/ /_/\____/ .___/\___/  /____/\__/\____/_/   \___/ 
+           /_/                     Hopes and dreams"#.trim_start_matches('\n');
+
+    ClearCommand{}.run().unwrap();
+    println!("{}", banner_slanted);
+    println!("{}\n", customer.to_string());
+
     loop {
+
         println!("1. Browse product");
         println!("2. Search product");
         println!("3. Add to shopping cart");
@@ -185,18 +202,23 @@ fn customer_main() {
         println!("6. Delete an order");
         println!("0. Log out");
 
-        let input = read_input(": ");
-        match input.as_str() {
+        let input = read_input(" option: ");
+        let result = match input.as_str() {
             "1" => list_all_products(),
-            "2" => {},
-            "3" => {},
-            "4" => {},
-            "5" => {},
-            "6" => {},
-            "0" => {
-                break;
-            },
-            _=> {},
+            "2" => Ok(()),
+            "3" => Ok(()),
+            "4" => Ok(()),
+            "5" => Ok(()),
+            "6" => Ok(()),
+            "0" => break,
+             _  => Ok(()),
+        };
+
+        match result {
+            Ok(_) => {},
+            Err(err) => {
+                eprintln!("{}", err);
+            }
         }
     }
     println!("Logging out.....");
@@ -214,6 +236,7 @@ fn register_main() {
         let last_name = read_input("last name: ");
         let city = read_input("city: ");
         let street = read_input("street: ");
+        let postcode = read_input("postcode: ");
         let country = read_input("country: ");
         let telephone = read_input("telephone nr: ");
 
@@ -223,6 +246,7 @@ fn register_main() {
             email,
             password,
             street,
+            postcode,
             city,
             country,
             telephone,
@@ -242,8 +266,9 @@ fn register_main() {
 }
 
 pub fn tui_main() {
-    ClearCommand{}.run().unwrap();
+    let mut err_msg = String::new();
     loop {
+        ClearCommand{}.run().unwrap();
         println!("{}", BANNER_SPEED.trim_start_matches('\n'));
 
         println!("Log in as:");
@@ -251,18 +276,18 @@ pub fn tui_main() {
         println!(" 2. Customer");
         println!(" 3. Register as customer");
         println!(" 0. Exit");
+        if !err_msg.is_empty() {
+            eprintln!(" {}", err_msg);
+            err_msg = String::new();
+        }
         let choice = read_input(" option: ");
-        println!();
 
         match choice.as_str() {
             "1" => admin_main(),
             "2" => customer_main(),
             "3" => register_main(),
             "0" => break,
-            _ => {
-                ClearCommand{}.run().unwrap();
-                println!("Invalid choice!!!");
-            }
+            _ => err_msg = "Invalid choice".to_string()
         }
     }
 }

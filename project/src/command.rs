@@ -18,7 +18,7 @@ pub trait AdminCommand {
     fn run(&self, admin: &mut Admin) -> Result<(), Box<dyn Error>>;
 }
 
-pub trait Command {
-    fn run(&self) -> Result<(), Box<dyn Error>>;
+pub trait Command<T> {
+    fn run(&self) -> Result<T, Box<dyn Error>>;
 }
 

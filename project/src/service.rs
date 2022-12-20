@@ -31,7 +31,7 @@ pub fn connect_db() -> Result<Client, Box<dyn Error>> {
 }
 
 pub struct ClearCommand;
-impl Command for ClearCommand {
+impl Command<()> for ClearCommand {
     fn run(&self) -> Result<(), Box<dyn Error>> {
         // https://www.lihaoyi.com/post/BuildyourownCommandLinewithANSIescapecodes.html#deletion
         print!("\u{001b}[2J\u{001b}[H");
@@ -42,20 +42,23 @@ impl Command for ClearCommand {
 
 pub struct AddAddressCommand {
     pub street: String,
+    pub postcode: String,
     pub city: String,
     pub country: String,
     pub telephone: String,
 }
-impl Command for AddAddressCommand {
-    fn run(&self) -> Result<(), Box<dyn Error>> {
+impl Command<i32> for AddAddressCommand {
+    fn run(&self) -> Result<i32, Box<dyn Error>> {
         let mut db = connect_db()?;
-        let ok_insert = db.execute(
-            "INSERT INTO address(street, city, country, telephone)
-             VALUES ($1, $2, $3, $4)",
-            &[&self.street, &self.city, &self.country, &self.telephone],
-        )?;
-        if ok_insert == 1 {
-            Ok(())
+        let insert = db.query_one(
+            "INSERT INTO address(street, postcode, city, country, telephone)
+             VALUES ($1, $2, $3, $4, $5)
+             RETURNING *",
+            &[&self.street, &self.postcode, &self.city, &self.country, &self.telephone],
+        );
+        if let Ok(ok) = insert {
+            let id: i32 = ok.get("id");
+            Ok(id)
         } else {
             Err(Box::new(io::Error::new(
                 ErrorKind::Other,
@@ -71,6 +74,7 @@ pub struct RegiserCustomerCommand {
     pub email: String,
     pub password: String,
     pub street: String,
+    pub postcode: String,
     pub city: String,
     pub country: String,
     pub telephone: String,
@@ -80,26 +84,17 @@ impl CustomerCommand for RegiserCustomerCommand {
         let mut db = connect_db()?;
         let address_command = AddAddressCommand{
             street: self.street.to_owned(),
+            postcode: self.postcode.to_owned(),
             city: self.city.to_owned(),
             country: self.country.to_owned(),
             telephone: self.telephone.to_owned(),
         };
-        address_command.run()?;
-        let address = db.query_one("SELECT id FROM address
-                                    WHERE street = $1 AND city = $2 AND country = $3 AND telephone = $4",
-                                    &[&self.street, &self.city, &self.country, &self.telephone])?;
-        let address_id: i32 = address.get("id");
+        let address_id = address_command.run()?;
 
         let ok_insert = db.execute(
             "INSERT INTO customer(address_id, first_name, last_name, email, password)
-             VALUES ($1,$2,$3,$4,$5)",
-            &[
-                &address_id,
-                &self.first_name,
-                &self.last_name,
-                &self.email,
-                &self.password,
-            ],
+             VALUES ($1, $2, $3, $4, $5)",
+            &[&address_id, &self.first_name, &self.last_name, &self.email, &self.password],
         )?;
 
         if ok_insert == 1 {
@@ -212,7 +207,7 @@ pub struct AddSupplierCommand {
     pub address_id: i32,
     pub name: String,
 }
-impl Command for AddSupplierCommand {
+impl Command<()> for AddSupplierCommand {
     fn run(&self) -> Result<(), Box<dyn Error>> {
         let mut db = connect_db()?;
         let ok_insert = db.execute(
@@ -220,7 +215,10 @@ impl Command for AddSupplierCommand {
             &[&self.admin_id, &self.address_id, &self.name],
         )?;
         if ok_insert == 1 {
-            panic!("Not implemented")
+            Err(Box::new(io::Error::new(
+                ErrorKind::Other,
+                "Not implemented",
+            )))
         } else {
             Err(Box::new(io::Error::new(
                 ErrorKind::Other,
@@ -233,20 +231,24 @@ impl Command for AddSupplierCommand {
 pub struct AddProductCommand {
     pub supplier_id: i32,
     pub name: String,
-    pub quantity: String,
-    pub price: String,
+    pub description: String,
+    pub quantity: i32,
+    pub price: f64,
 }
-impl Command for AddProductCommand {
+impl Command<()> for AddProductCommand {
     fn run(&self) -> Result<(), Box<dyn Error>> {
         let mut db = connect_db()?;
 
         let ok_insert = db.execute(
-            "INSERT INTO product(supplier_id, name, quantity, price)
+            "INSERT INTO product(supplier_id, name, description, quantity, price)
              VALUES ($1,$2,$3,$4)",
             &[&self.supplier_id, &self.name, &self.quantity, &self.price],
         )?;
         if ok_insert == 1 {
-            panic!("Not implemented")
+            Err(Box::new(io::Error::new(
+                ErrorKind::Other,
+                "Not implemented",
+            )))
         } else {
             Err(Box::new(io::Error::new(
                 ErrorKind::Other,
@@ -257,10 +259,12 @@ impl Command for AddProductCommand {
 }
 
 pub struct ListProductsCommand ;
-impl Command for ListProductsCommand {
-    fn run(&self) -> Result<(), Box<dyn Error>> {
+impl Command<String> for ListProductsCommand {
+    fn run(&self) -> Result<String, Box<dyn Error>> {
         let mut db = connect_db()?;
 
+        let mut str = String::new();
+        str.push_str(&"id, supplier_id, name, description, quantity, price\n");
         for row in db.query("SELECT id, supplier_id, name, description, quantity, CAST(price AS DOUBLE PRECISION) as price FROM product", &[])?{
             let product = Product{
                 id: row.get(0),
@@ -270,8 +274,8 @@ impl Command for ListProductsCommand {
                 quantity: row.get(4),
                 price: row.get(5),
             };
-            println!("{} {} {} {} {} {}", product.id, product.supplier_id, product.name, product.description, product.quantity, product.price);
+            str.push_str(&format!("{} {} {} {} {} {}\n", product.id, product.supplier_id, product.name, product.description, product.quantity, product.price));
         }
-        Ok(())
+        Ok(str)
     }
 }

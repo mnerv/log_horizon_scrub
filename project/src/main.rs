@@ -14,6 +14,7 @@ mod service;
 mod tui;
 
 use crate::tui::tui_main;
+
 fn main() {
     tui_main();
     println!("Goodbye cruel world...");
