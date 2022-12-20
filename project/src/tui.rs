@@ -157,6 +157,19 @@ fn list_all_products() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+fn add_to_cart(customer: &mut Customer) -> Result<(), Box<dyn Error>>{
+    let product_id = read_input("Product id:").parse::<i32>().unwrap();
+    let quantity = read_input("Quantity:").parse::<i32>().unwrap();
+
+    let add_cmd = AddToCart{
+        product_id,
+        quantity,
+    };
+
+    add_cmd.run(customer)?;
+    Ok(())
+}
+
 fn customer_main() {
     let mut customer = Customer::default();
     loop {
@@ -206,7 +219,7 @@ fn customer_main() {
         let result = match input.as_str() {
             "1" => list_all_products(),
             "2" => Ok(()),
-            "3" => Ok(()),
+            "3" => add_to_cart(&mut customer),
             "4" => Ok(()),
             "5" => Ok(()),
             "6" => Ok(()),
