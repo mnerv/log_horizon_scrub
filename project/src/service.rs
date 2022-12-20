@@ -287,10 +287,10 @@ pub struct AddToCart{
 impl CustomerCommand for AddToCart {
     fn run(&self, customer: &mut Customer) -> Result<(), Box<dyn Error>> {
         let mut db = connect_db()?;
-        let list_id_row = db.query_one("SELECT id FROM shopping_list
+        let list_id_row = db.query_one("SELECT id FROM item_list
                                    WHERE customer_id=$1", &[&customer.id()])?;
         let list_id: i32 = list_id_row.get(0);
-        let cart = db.query_one("INSERT INTO shopping_cart ($1, $2, $3) 
+        let cart = db.query_one("INSERT INTO item_cart ($1, $2, $3) 
                                 ON CONFLICT UPDATE",
                                 &[&list_id, &self.product_id, &self.quantity]);
         Ok(())
