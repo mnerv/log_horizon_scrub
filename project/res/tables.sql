@@ -17,6 +17,7 @@ CREATE TABLE admin(
 CREATE TABLE address(
     id SERIAL NOT NULL UNIQUE,
     street VARCHAR(30),
+    postcode VARCHAR(8),
     city VARCHAR(30),
     country VARCHAR(30),
     telephone CHAR(10),
@@ -28,6 +29,7 @@ CREATE TABLE supplier(
     admin_id INT NOT NULL,
     address_id INT NOT NULL UNIQUE,
     name VARCHAR(30) NOT NULL,
+    description VARCHAR(512),
     PRIMARY KEY (id),
     FOREIGN KEY (admin_id) REFERENCES admin(id) on UPDATE CASCADE,
     FOREIGN KEY (address_id) REFERENCES address(id) on UPDATE CASCADE
@@ -57,14 +59,14 @@ CREATE TABLE product(
     id SERIAL NOT NULL UNIQUE,
     supplier_id INT NOT NULL,
     name VARCHAR(30) NOT NULL,
-    description VARCHAR(512) NOT NULL,
+    description VARCHAR(1024),
     quantity INT NOT NULL,
     price NUMERIC(16,2) NOT NULL,
     PRIMARY KEY(id),
     FOREIGN KEY (supplier_id) REFERENCES supplier(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
-CREATE TABLE shopping_list(
+CREATE TABLE cart(
     id SERIAL NOT NULL UNIQUE,
     customer_id INT NOT NULL UNIQUE,
     updated DATE,
@@ -92,16 +94,16 @@ CREATE TABLE discount_product(
     FOREIGN KEY(product_id) REFERENCES product(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
-CREATE TABLE shopping_cart(
-    shopping_list_id INT NOT NULL,
+CREATE TABLE cart_item(
+    cart_id INT NOT NULL,
     product_id INT NOT NULL,
     quantity INT NOT NULL,
-    PRIMARY KEY(shopping_list_id, product_id),
-    FOREIGN KEY(shopping_list_id) REFERENCES shopping_list(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    PRIMARY KEY(cart_id, product_id),
+    FOREIGN KEY(cart_id) REFERENCES cart(id) ON UPDATE CASCADE ON DELETE CASCADE,
     FOREIGN KEY(product_id) REFERENCES product(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
-CREATE TABLE order_detail(
+CREATE TABLE order_item(
     id INT NOT NULL UNIQUE,
     order_id INT NOT NULL,
     product_id INT NOT NULL,
