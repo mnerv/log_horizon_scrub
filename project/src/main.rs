@@ -13,27 +13,25 @@ mod command;
 mod hope;
 mod service;
 
-use command::CustomerCommand;
-use hope::*;
-
-use crate::command::Command;
+use crate::hope::*;
+use crate::command::*;
 use crate::service::*;
 
-fn read_input(label: &str) -> Result<String, Box<dyn Error>> {
+fn read_input(label: &str) -> String {
     let mut input = String::new();
     print!("{}", label);
-    std::io::stdout().flush()?;
-    std::io::stdin().read_line(&mut input)?;
-    Ok(input.trim().to_string())
+    std::io::stdout().flush().expect("Failed to flush");
+    std::io::stdin().read_line(&mut input).expect("Failed to read input");
+    input.trim().to_string()
 }
 
 fn admin_create_supplier() -> Result<(), Box<dyn Error>> {
-    let name = read_input("name: ")?;
+    let name = read_input("name: ");
 
-    let street = read_input("street: ")?;
-    let city = read_input("city: ")?;
-    let country = read_input("country: ")?;
-    let telephone = read_input("telephone nr: ")?;
+    let street = read_input("street: ");
+    let city = read_input("city: ");
+    let country = read_input("country: ");
+    let telephone = read_input("telephone nr: ");
     let address_command = AddAddressCommand {
         street,
         city,
@@ -51,10 +49,10 @@ fn admin_create_supplier() -> Result<(), Box<dyn Error>> {
 }
 
 fn admin_create_product() -> Result<(), Box<dyn Error>> {
-    let name = read_input("name: ")?;
-    let quantity = read_input("quntity: ")?;
-    let price = read_input("price: ")?;
-    let supplier_id_str = read_input("supplier id: ")?;
+    let name = read_input("name: ");
+    let quantity = read_input("quntity: ");
+    let price = read_input("price: ");
+    let supplier_id_str = read_input("supplier id: ");
     let supplier_id = supplier_id_str.parse::<i32>()?;
 
     let add_cmd = AddProductCommand {
@@ -63,78 +61,125 @@ fn admin_create_product() -> Result<(), Box<dyn Error>> {
         quantity,
         price,
     };
-
-    //let succeded = run_command(add_cmd);
-    Ok(())
+    Err(Box::new(std::io::Error::new(
+        std::io::ErrorKind::Other,
+        "create product Not implemented",
+    )))
 }
 
-fn list_all_products() -> Result<(), Box<dyn Error>> {
-    let list_cmd = ListProductsCommand{};
-    list_cmd.run()?;
-    Ok(())
-}
+fn admin_home(admin: &mut Admin) {
+    let pepper: &'static str = r#"
+ /_/_  _  _    __/__  __
+/ //_//_//_' _\ / /_///_'
+     /              Admin"#
+        .trim_start_matches('\n');
 
-fn admin_home() -> Result<(), Box<dyn Error>> {
+    println!("{pepper}");
+    println!("{}", admin.to_string());
     loop {
-        println!(" 1. Add new supplier");
-        println!(" 2. Add new product");
-        println!(" 3. Edit product");
-        println!(" 4. Delete product");
-        println!(" 5. Search for product");
-        println!(" 6. Add new discount");
-        println!(" 7. Assign discount");
-        println!(" 8. View discount history");
-        println!(" 9. Confirm order");
-        println!("10. List products with max orders");
-        println!(" 0. Log out");
-        let choice = read_input("Input: ")?;
-        match choice.as_str() {
-            "1" => admin_create_supplier()?,
-            "2" => admin_create_product()?,
-            "3" => {}
-            "4" => {}
-            "5" => {}
-            "6" => {}
-            "7" => {}
-            "8" => {}
-            "9" => {}
-            "10" => {}
-            "0" => {
-                println!("Logging out...");
-                break;
+        println!();
+        println!("Commands available");
+        println!("  1. Add new supplier");
+        println!("  2. Add new product");
+        println!("  3. Edit product");
+        println!("  4. Delete product");
+        println!("  5. Search for product");
+        println!("  6. Add new discount");
+        println!("  7. Assign discount");
+        println!("  8. View discount history");
+        println!("  9. Confirm order");
+        println!(" 10. List products with max orders");
+        println!("  0. Log out");
+        println!();
+
+        let choice = read_input(" option: ");
+        let result = match choice.as_str() {
+             "1" => admin_create_supplier(),
+             "2" => admin_create_product(),
+             "3" => Ok(()),
+             "4" => Ok(()),
+             "5" => Ok(()),
+             "6" => Ok(()),
+             "7" => Ok(()),
+             "8" => Ok(()),
+             "9" => Ok(()),
+            "10" => Ok(()),
+             "0" => break,
+              _  => Ok(()),
+        };
+
+        match result {
+            Ok(_) => {},
+            Err(err) => {
+                eprintln!("{}", err);
             }
-            _ => {}
         }
     }
-    Ok(())
+    ClearCommand{}.run().unwrap();
 }
 
-fn admin_main() -> Result<(), Box<dyn Error>> {
-    Ok(())
+fn admin_main() {
+    // Admin login
+    let mut admin = Admin::default();
+
+    println!("Login as admin, enter the credentials");
+    loop {
+        let email = read_input(" email: ");
+        let password = read_input(" password: ");
+        let login = LoginAdminCommand{email, password};
+
+        match login.run(&mut admin){
+            Ok(()) => break,
+            Err(error) => {
+                println!("{}", error);
+                let input = read_input("Do you want to try again? Y/n: ");
+                if input.eq_ignore_ascii_case("n") || !input.eq_ignore_ascii_case("y") {
+                    break;
+                }
+            },
+        };
+    }
+
+    if !admin.is_login() {
+        ClearCommand{}.run().unwrap();
+        return;
+    }
+
+    // Admin home
+    ClearCommand{}.run().unwrap();
+    admin_home(&mut admin);
 }
 
-fn list_products() -> Result<(), Box<dyn Error>>{
-    Ok(())
+fn list_all_products() {
+    let list_cmd = ListProductsCommand{};
+    match list_cmd.run() {
+        Ok(_) => {},
+        Err(err) => eprintln!("{}", err)
+    }
 }
 
-fn customer_main() -> Result<(), Box<dyn Error>> {
-        let mut customer = Customer::default();
-    loop{
-        let email = read_input("email: ").unwrap();
-        let password = read_input("password: ").unwrap();
+fn customer_main() {
+    let mut customer = Customer::default();
+    loop {
+        let email = read_input("email: ");
+        let password = read_input("password: ");
         let login = LoginCustomerCommand{email, password};
 
         match login.run(&mut customer){
             Ok(()) => break,
             Err(error) => {
                 println!("{}", error);
-                let input = read_input("do you want to try again? y/n")?;
-                if input == "n".to_string(){break;} 
+                let input = read_input("do you want to try again? y/n");
+                if input == "n" {
+                    break;
+                }
             },
         };
     }
 
-    if !customer.is_login(){return Ok(());}
+    if !customer.is_login() {
+        return;
+    }
     loop {
         println!("1. Browse product");
         println!("2. Search product");
@@ -144,22 +189,21 @@ fn customer_main() -> Result<(), Box<dyn Error>> {
         println!("6. Delete an order");
         println!("0. Log out");
 
-        let input = read_input(": ")?;
+        let input = read_input(": ");
         match input.as_str() {
-            "1" => {list_all_products()?;},
+            "1" => list_all_products(),
             "2" => {},
             "3" => {},
             "4" => {},
             "5" => {},
             "6" => {},
             "0" => {
-                println!("Logging out.....");
-                break;        
+                break;
             },
-            _=>{},
+            _=> {},
         }
     }
-    Ok(())
+    println!("Logging out.....");
 }
 
 fn register_main() {
@@ -167,63 +211,56 @@ fn register_main() {
     clear.run().expect("");
 
     println!("Register as new customer");
-    let email = read_input("email: ").unwrap();
-    let password = read_input("password: ").unwrap();
-    let first_name = read_input("first name: ").unwrap();
-    let last_name = read_input("last name: ").unwrap();
-    let city = read_input("city: ").unwrap();
-    let street = read_input("street: ").unwrap();
-    let country = read_input("country: ").unwrap();
-    let telephone = read_input("telephone nr: ").unwrap();
+    loop {
+        let email = read_input("email: ");
+        let password = read_input("password: ");
+        let first_name = read_input("first name: ");
+        let last_name = read_input("last name: ");
+        let city = read_input("city: ");
+        let street = read_input("street: ");
+        let country = read_input("country: ");
+        let telephone = read_input("telephone nr: ");
 
-    let signup_command = RegiserCustomerCommand {
-        first_name,
-        last_name,
-        email,
-        password,
-        street,
-        city,
-        country,
-        telephone,
-    };
-    let mut customer = Customer::default();
-    signup_command.run(&mut customer).expect("");
+        let signup_command = RegiserCustomerCommand {
+            first_name,
+            last_name,
+            email,
+            password,
+            street,
+            city,
+            country,
+            telephone,
+        };
+        let mut customer = Customer::default();
+        match signup_command.run(&mut customer) {
+            Ok(_) => break,
+            Err(err) => {
+                eprintln!("{}", err);
+                let choice = read_input("Try again? Y/n: ");
+                if choice == "n" {
+                    break;
+                }
+            }
+        }
+    }
 }
 
 fn main() {
-    let pepper: &'static str = r#"
- /_/_  _  _    __/__  __
-/ //_//_//_' _\ / /_///_'
-     /                   "#
-        .trim_start_matches('\n');
-    let slanted: &'static str = r#"
-    __  __                         __                
-   / / / /___  ____  ___     _____/ /_____  ________ 
-  / /_/ / __ \/ __ \/ _ \   / ___/ __/ __ \/ ___/ _ \
- / __  / /_/ / /_/ /  __/  (__  ) /_/ /_/ / /  /  __/
-/_/ /_/\____/ .___/\___/  /____/\__/\____/_/   \___/ 
-           /_/                     Hopes and dreams"#
-        .trim_start_matches('\n');
-    let speed: &'static str = r#"
-______  __                              _____                   
-___  / / /__________________     _________  /__________________ 
-__  /_/ /_  __ \__  __ \  _ \    __  ___/  __/  __ \_  ___/  _ \
-_  __  / / /_/ /_  /_/ /  __/    _(__  )/ /_ / /_/ /  /   /  __/
-/_/ /_/  \____/_  .___/\___/     /____/ \__/ \____//_/    \___/ 
-               /_/                 Hopes and dreams"#
-        .trim_start_matches('\n');
-
+    ClearCommand{}.run().unwrap();
     loop {
+        println!("{}", BANNER_SPEED.trim_start_matches('\n'));
+
         println!("Log in as:");
-        println!("1. Admin");
-        println!("2. Customer");
-        println!("3. Register as customer");
-        println!("0. Exit");
-        let choice = read_input("Input: ").expect("Can't read input");
+        println!(" 1. Admin");
+        println!(" 2. Customer");
+        println!(" 3. Register as customer");
+        println!(" 0. Exit");
+        let choice = read_input(" option: ");
+        println!();
 
         match choice.as_str() {
-            "1" => admin_main().expect(""),
-            "2" => customer_main().expect(""),
+            "1" => admin_main(),
+            "2" => customer_main(),
             "3" => register_main(),
             "0" => break,
             _ => {

@@ -1,8 +1,6 @@
 use postgres::{Client, NoTls};
-use postgres::types::FromSql;
 use std::{error::Error, io::Write};
 use std::{io, io::ErrorKind};
-use std::convert::TryInto;
 
 use crate::command::*;
 use crate::hope::*;
@@ -107,6 +105,45 @@ impl CustomerCommand for RegiserCustomerCommand {
                 ErrorKind::Other,
                 "Failed to create user",
             )))
+        }
+    }
+}
+
+pub struct LoginAdminCommand {
+    pub email: String,
+    pub password: String,
+}
+impl AdminCommand for LoginAdminCommand {
+    fn run(&self, admin: &mut Admin) -> Result<(), Box<dyn Error>> {
+        let mut db = connect_db()?;
+        let email = db.query_one("SELECT email FROM admin WHERE email = $1", &[&self.email]);
+        if let Err(_) = email {
+            return Err(Box::new(io::Error::new(
+                ErrorKind::NotFound,
+                "Login failed: No admin with email: ".to_string() + &self.email,
+            )));
+        }
+
+        let password = db.query_one("SELECT * FROM admin WHERE email = $1 AND password = $2",
+                                    &[&self.email, &self.password]);
+
+        if let Err(_) = password {
+            return Err(Box::new(io::Error::new(
+                ErrorKind::NotFound,
+                "Login failed: Invalid password",
+            )));
+        }
+
+        if let Ok(login) = password {
+            let id: i32 = login.get("id");
+            let email: String = login.get("email");
+            admin.login(&Admin::new(id, email));
+            Ok(())
+        } else {
+            return Err(Box::new(io::Error::new(
+                ErrorKind::NotFound,
+                "Login failed: Unknown error",
+            )));
         }
     }
 }

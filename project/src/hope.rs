@@ -1,3 +1,19 @@
+pub const BANNER_SLANTED: &'static str = r#"
+    __  __                         __                
+   / / / /___  ____  ___     _____/ /_____  ________ 
+  / /_/ / __ \/ __ \/ _ \   / ___/ __/ __ \/ ___/ _ \
+ / __  / /_/ / /_/ /  __/  (__  ) /_/ /_/ / /  /  __/
+/_/ /_/\____/ .___/\___/  /____/\__/\____/_/   \___/ 
+           /_/                     Hopes and dreams"#;
+
+pub const BANNER_SPEED: &'static str = r#"
+______  __                              _____                   
+___  / / /__________________     _________  /__________________ 
+__  /_/ /_  __ \__  __ \  _ \    __  ___/  __/  __ \_  ___/  _ \
+_  __  / / /_/ /_  /_/ /  __/    _(__  )/ /_ / /_/ /  /   /  __/
+/_/ /_/  \____/_  .___/\___/     /____/ \__/ \____//_/    \___/ 
+               /_/                 Hopes and dreams"#;
+
 pub enum StoreMode {
     Command,
     StateMachine,
@@ -81,7 +97,7 @@ impl Admin {
         Admin { id: 0, email: "".to_string() }
     }
 
-    pub fn login(&mut self, admin: &mut Admin) {
+    pub fn login(&mut self, admin: &Admin) {
         self.id = admin.id;
         self.email = admin.email.to_owned();
     }
