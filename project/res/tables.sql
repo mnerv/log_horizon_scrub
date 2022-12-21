@@ -85,7 +85,7 @@ CREATE TABLE orders(
     FOREIGN KEY (confirmed_by_admin) REFERENCES admin(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
-CREATE TABLE discount_product(
+CREATE TABLE discount_item(
     discount_id INT NOT NULL,
     product_id INT NOT NULL,
     factor NUMERIC(3, 2) NOT NULL, -- unsure about the data type
