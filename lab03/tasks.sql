@@ -1,3 +1,12 @@
+/*
+ * @file   tasks.sql
+ * @author Pratchaya Khansomboon (me@mononerv.dev)
+ * @author Eric Lundin
+ * @brief  Lab04 tasks.
+ * @date   2022-12-22
+ *
+ * @copyright Copyright (c) 2022
+ */
 -- Part I. Trigger calling a Function
 
 -- 1.
@@ -21,7 +30,8 @@ END;
 $$
 
 CREATE TRIGGER trg_registration_all_graded
-    after update 
-    on registration
-    for each statement
-    execute Function registration_all_graded();
+    AFTER UPDATE
+    ON registration
+    FOR EACH STATEMENT
+    EXECUTE FUNCTION registration_all_graded();
+
