@@ -30,6 +30,7 @@ CREATE TABLE supplier(
     address_id INT NOT NULL UNIQUE,
     name VARCHAR(30) NOT NULL,
     description VARCHAR(512),
+    orgnum VARCHAR(30) NOT NULL UNIQUE,
     PRIMARY KEY (id),
     FOREIGN KEY (admin_id) REFERENCES admin(id) on UPDATE CASCADE,
     FOREIGN KEY (address_id) REFERENCES address(id) on UPDATE CASCADE
@@ -40,7 +41,7 @@ CREATE TABLE customer(
     address_id INT NOT NULL UNIQUE,
     first_name VARCHAR(30) NOT NULL,
     last_name VARCHAR(30) NOT NULL,
-    email VARCHAR(30) NOT NULL,
+    email VARCHAR(30) NOT NULL UNIQUE,
     password VARCHAR(30) NOT NULL,
     PRIMARY KEY(id),
     FOREIGN KEY (address_id) REFERENCES address(id) ON UPDATE CASCADE ON DELETE CASCADE
