@@ -51,8 +51,8 @@ CREATE TABLE discount(
     id SERIAL NOT NULL UNIQUE,
     code VARCHAR(30) NOT NULL UNIQUE,
     name VARCHAR(30) NOT NULL,
-    start_date DATE,
-    end_date DATE,
+    start_date DATETIME,
+    end_date DATETIME,
     PRIMARY KEY(id)
 );
 
@@ -70,7 +70,7 @@ CREATE TABLE product(
 CREATE TABLE cart(
     id SERIAL NOT NULL UNIQUE,
     customer_id INT NOT NULL UNIQUE,
-    updated DATE,
+    updated TIMESTAMP,
     PRIMARY KEY(id),
     FOREIGN KEY (customer_id) REFERENCES customer(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
@@ -79,7 +79,7 @@ CREATE TABLE orders(
     id SERIAL NOT NULL UNIQUE,
     customer_id INT NOT NULL,
     confirmed_by_admin INT NULL,
-    created DATE NOT NULL,
+    created TIMESTAMP NOT NULL,
     status VARCHAR(30) NOT NULL,
     PRIMARY KEY(id),
     FOREIGN KEY (customer_id) REFERENCES customer(id) ON UPDATE CASCADE ON DELETE CASCADE,
@@ -105,7 +105,7 @@ CREATE TABLE cart_item(
 );
 
 CREATE TABLE order_item(
-    id INT NOT NULL UNIQUE,
+    id SERIAL NOT NULL UNIQUE,
     order_id INT NOT NULL,
     product_id INT NOT NULL,
     quantity INT NOT NULL,
@@ -113,4 +113,3 @@ CREATE TABLE order_item(
     FOREIGN KEY(order_id) REFERENCES orders(id) ON UPDATE CASCADE ON DELETE CASCADE,
     FOREIGN KEY(product_id) REFERENCES product(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
-
