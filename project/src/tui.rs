@@ -1,3 +1,6 @@
+use crate::command::*;
+use crate::hope::*;
+use crate::service::*;
 /**
  * @file   tui.rs
  * @author Pratchaya Khansomboon (me@mononerv.dev)
@@ -9,9 +12,6 @@
  * @copyright Copyright (c) 2022
  */
 use std::{error::Error, io::Write};
-use crate::hope::*;
-use crate::command::*;
-use crate::service::*;
 
 fn read_input(label: &str) -> String {
     let mut input = String::new();
@@ -94,28 +94,28 @@ fn admin_home(admin: &mut Admin) {
 
         let choice = read_input(" option: ");
         let result = match choice.as_str() {
-             "1" => admin_create_supplier(),
-             "2" => admin_create_product(),
-             "3" => Ok(()),
-             "4" => Ok(()),
-             "5" => Ok(()),
-             "6" => Ok(()),
-             "7" => Ok(()),
-             "8" => Ok(()),
-             "9" => Ok(()),
+            "1" => admin_create_supplier(),
+            "2" => admin_create_product(),
+            "3" => Ok(()),
+            "4" => Ok(()),
+            "5" => Ok(()),
+            "6" => Ok(()),
+            "7" => Ok(()),
+            "8" => Ok(()),
+            "9" => Ok(()),
             "10" => Ok(()),
-             "0" => break,
-              _  => Ok(()),
+            "0" => break,
+            _ => Ok(()),
         };
 
         match result {
-            Ok(_) => {},
+            Ok(_) => {}
             Err(err) => {
                 eprintln!("{}", err);
             }
         }
     }
-    ClearCommand{}.run().unwrap();
+    ClearCommand {}.run().unwrap();
 }
 
 fn admin_main() {
@@ -126,42 +126,45 @@ fn admin_main() {
     loop {
         let email = read_input(" email: ");
         let password = read_input(" password: ");
-        let login = LoginAdminCommand{email, password};
+        let login = LoginAdminCommand { email, password };
 
-        match login.run(&mut admin){
+        match login.run(&mut admin) {
             Ok(()) => break,
             Err(error) => {
                 println!("{}", error);
                 let input = read_input("Do you want to try again? Y/n: ");
-                if input.eq_ignore_ascii_case("n") || !input.eq_ignore_ascii_case("y") || input.is_empty() {
+                if input.eq_ignore_ascii_case("n")
+                    || !input.eq_ignore_ascii_case("y")
+                    || input.is_empty()
+                {
                     break;
                 }
-            },
+            }
         };
     }
 
     if !admin.is_login() {
-        ClearCommand{}.run().unwrap();
+        ClearCommand {}.run().unwrap();
         return;
     }
 
     // Admin home
-    ClearCommand{}.run().unwrap();
+    ClearCommand {}.run().unwrap();
     admin_home(&mut admin);
 }
 
 fn list_all_products() -> Result<(), Box<dyn Error>> {
-    let list_cmd = ListProductsCommand{};
+    let list_cmd = ListProductsCommand {};
     let str = list_cmd.run()?;
     println!("{}", str);
     Ok(())
 }
 
-fn add_to_cart(customer: &mut Customer) -> Result<(), Box<dyn Error>>{
+fn add_to_cart(customer: &mut Customer) -> Result<(), Box<dyn Error>> {
     let product_id = read_input("Product id:").parse::<i32>().unwrap();
     let quantity = read_input("Quantity:").parse::<i32>().unwrap();
 
-    let add_cmd = AddToCart{
+    let add_cmd = AddToCart {
         product_id,
         quantity,
     };
@@ -170,22 +173,32 @@ fn add_to_cart(customer: &mut Customer) -> Result<(), Box<dyn Error>>{
     Ok(())
 }
 
+fn show_cart(customer: &mut Customer) -> Result<(), Box<dyn Error>> {
+    let show_cmd = ShowCartCommand {};
+    let str = show_cmd.run(customer)?;
+    //println!("{}", str);
+    Ok(())
+}
+
 fn customer_main() {
     let mut customer = Customer::default();
     loop {
         let email = read_input("email: ");
         let password = read_input("password: ");
-        let login = LoginCustomerCommand{email, password};
+        let login = LoginCustomerCommand { email, password };
 
-        match login.run(&mut customer){
+        match login.run(&mut customer) {
             Ok(()) => break,
             Err(error) => {
                 println!("{}", error);
                 let input = read_input("Do you want to try again? Y/n: ");
-                if input.eq_ignore_ascii_case("n") || !input.eq_ignore_ascii_case("y") || input.is_empty() {
+                if input.eq_ignore_ascii_case("n")
+                    || !input.eq_ignore_ascii_case("y")
+                    || input.is_empty()
+                {
                     break;
                 }
-            },
+            }
         };
     }
 
@@ -199,14 +212,14 @@ fn customer_main() {
   / /_/ / __ \/ __ \/ _ \   / ___/ __/ __ \/ ___/ _ \
  / __  / /_/ / /_/ /  __/  (__  ) /_/ /_/ / /  /  __/
 /_/ /_/\____/ .___/\___/  /____/\__/\____/_/   \___/ 
-           /_/                     Hopes and dreams"#.trim_start_matches('\n');
+           /_/                     Hopes and dreams"#
+        .trim_start_matches('\n');
 
-    ClearCommand{}.run().unwrap();
+    ClearCommand {}.run().unwrap();
     println!("{}", banner_slanted);
     println!("{}\n", customer.to_string());
 
     loop {
-
         println!("1. Browse product");
         println!("2. Search product");
         println!("3. Add to shopping cart");
@@ -224,11 +237,11 @@ fn customer_main() {
             "5" => Ok(()),
             "6" => Ok(()),
             "0" => break,
-             _  => Ok(()),
+            _ => Ok(()),
         };
 
         match result {
-            Ok(_) => {},
+            Ok(_) => {}
             Err(err) => {
                 eprintln!("{}", err);
             }
@@ -238,7 +251,7 @@ fn customer_main() {
 }
 
 fn register_main() {
-    let clear = ClearCommand{};
+    let clear = ClearCommand {};
     clear.run().expect("");
 
     println!("Register as new customer");
@@ -281,7 +294,7 @@ fn register_main() {
 pub fn tui_main() {
     let mut err_msg = String::new();
     loop {
-        ClearCommand{}.run().unwrap();
+        ClearCommand {}.run().unwrap();
         println!("{}", BANNER_SPEED.trim_start_matches('\n'));
 
         println!("Log in as:");
@@ -300,7 +313,7 @@ pub fn tui_main() {
             "2" => customer_main(),
             "3" => register_main(),
             "0" => break,
-            _ => err_msg = "Invalid choice".to_string()
+            _ => err_msg = "Invalid choice".to_string(),
         }
     }
 }

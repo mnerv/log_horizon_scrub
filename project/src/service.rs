@@ -54,7 +54,13 @@ impl Command<i32> for AddAddressCommand {
             "INSERT INTO address(street, postcode, city, country, telephone)
              VALUES ($1, $2, $3, $4, $5)
              RETURNING *",
-            &[&self.street, &self.postcode, &self.city, &self.country, &self.telephone],
+            &[
+                &self.street,
+                &self.postcode,
+                &self.city,
+                &self.country,
+                &self.telephone,
+            ],
         );
         if let Ok(ok) = insert {
             let id: i32 = ok.get("id");
@@ -82,7 +88,7 @@ pub struct RegiserCustomerCommand {
 impl CustomerCommand for RegiserCustomerCommand {
     fn run(&self, customer: &mut Customer) -> Result<(), Box<dyn Error>> {
         let mut db = connect_db()?;
-        let address_command = AddAddressCommand{
+        let address_command = AddAddressCommand {
             street: self.street.to_owned(),
             postcode: self.postcode.to_owned(),
             city: self.city.to_owned(),
@@ -94,11 +100,17 @@ impl CustomerCommand for RegiserCustomerCommand {
         let ok_insert = db.execute(
             "INSERT INTO customer(address_id, first_name, last_name, email, password)
              VALUES ($1, $2, $3, $4, $5)",
-            &[&address_id, &self.first_name, &self.last_name, &self.email, &self.password],
+            &[
+                &address_id,
+                &self.first_name,
+                &self.last_name,
+                &self.email,
+                &self.password,
+            ],
         )?;
 
         if ok_insert == 1 {
-            let login = LoginCustomerCommand{
+            let login = LoginCustomerCommand {
                 email: self.email.to_string(),
                 password: self.password.to_string(),
             };
@@ -128,8 +140,10 @@ impl AdminCommand for LoginAdminCommand {
             )));
         }
 
-        let password = db.query_one("SELECT * FROM admin WHERE email = $1 AND password = $2",
-                                    &[&self.email, &self.password]);
+        let password = db.query_one(
+            "SELECT * FROM admin WHERE email = $1 AND password = $2",
+            &[&self.email, &self.password],
+        );
 
         if let Err(_) = password {
             return Err(Box::new(io::Error::new(
@@ -152,14 +166,17 @@ impl AdminCommand for LoginAdminCommand {
     }
 }
 
-pub struct LoginCustomerCommand{
+pub struct LoginCustomerCommand {
     pub email: String,
     pub password: String,
 }
 impl CustomerCommand for LoginCustomerCommand {
     fn run(&self, customer: &mut Customer) -> Result<(), Box<dyn Error>> {
         let mut db = connect_db()?;
-        let email = db.query_one("SELECT email FROM customer WHERE email = $1", &[&self.email]);
+        let email = db.query_one(
+            "SELECT email FROM customer WHERE email = $1",
+            &[&self.email],
+        );
         if let Err(_) = email {
             return Err(Box::new(io::Error::new(
                 ErrorKind::NotFound,
@@ -183,13 +200,13 @@ impl CustomerCommand for LoginCustomerCommand {
         if let Ok(login) = password {
             let id: i32 = login.get("id");
             let first_name: String = login.get("first_name");
-            let last_name: String  = login.get("last_name");
-            let email: String      = login.get("email");
-            let address_id: i32    = login.get("address_id");
-            let street: String     = login.get("street");
-            let city: String       = login.get("city");
-            let country: String    = login.get("country");
-            let telephone: String  = login.get("telephone");
+            let last_name: String = login.get("last_name");
+            let email: String = login.get("email");
+            let address_id: i32 = login.get("address_id");
+            let street: String = login.get("street");
+            let city: String = login.get("city");
+            let country: String = login.get("country");
+            let telephone: String = login.get("telephone");
             let address = Address::new(address_id, street, city, country, telephone);
             customer.login(&Customer::new(id, first_name, last_name, email, address));
             Ok(())
@@ -258,7 +275,7 @@ impl Command<()> for AddProductCommand {
     }
 }
 
-pub struct ListProductsCommand ;
+pub struct ListProductsCommand;
 impl Command<String> for ListProductsCommand {
     fn run(&self) -> Result<String, Box<dyn Error>> {
         let mut db = connect_db()?;
@@ -280,19 +297,62 @@ impl Command<String> for ListProductsCommand {
     }
 }
 
-pub struct AddToCart{
+pub struct AddToCart {
     pub product_id: i32,
     pub quantity: i32,
 }
 impl CustomerCommand for AddToCart {
     fn run(&self, customer: &mut Customer) -> Result<(), Box<dyn Error>> {
         let mut db = connect_db()?;
-        let list_id_row = db.query_one("SELECT id FROM item_list
-                                   WHERE customer_id=$1", &[&customer.id()])?;
+        let list_id_row = db.query_one(
+            "SELECT id FROM item_list
+                                   WHERE customer_id=$1",
+            &[&customer.id()],
+        )?;
         let list_id: i32 = list_id_row.get(0);
-        let cart = db.query_one("INSERT INTO item_cart ($1, $2, $3) 
+        let cart = db.query_one(
+            "INSERT INTO item_cart ($1, $2, $3) 
                                 ON CONFLICT UPDATE",
-                                &[&list_id, &self.product_id, &self.quantity]);
+            &[&list_id, &self.product_id, &self.quantity],
+        );
+        Ok(())
+    }
+}
+
+pub struct ShowCartCommand {}
+impl CustomerCommand for ShowCartCommand {
+    fn run(&self, customer: &mut Customer) -> Result<(), Box<dyn Error>> {
+        let mut db = connect_db()?;
+        let list_id_row = db.query_one(
+            "SELECT id FROM item_list
+                                   WHERE customer_id=$1",
+            &[&customer.id()],
+        )?;
+        let list_id: i32 = list_id_row.get(0);
+        let cart = db.query("SELECT * FROM item_cart WHERE list_id=$1", &[&list_id])?;
+
+        for row in cart {
+            let product_id: i32 = row.get(1);
+            let product_row = db.query_one("SELECT * FROM product WHERE id=$1", &[&product_id])?;
+            let product = Product {
+                id: product_row.get(0),
+                supplier_id: product_row.get(1),
+                name: product_row.get(2),
+                description: product_row.get(3),
+                quantity: product_row.get(4),
+                price: product_row.get(5),
+            };
+            let str = format!(
+                "{} {} {} {} {} {}\n",
+                product.id,
+                product.supplier_id,
+                product.name,
+                product.description,
+                product.quantity,
+                product.price
+            );
+            println!("{}", str);
+        }
         Ok(())
     }
 }
