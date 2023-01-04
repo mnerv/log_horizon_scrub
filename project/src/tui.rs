@@ -180,6 +180,13 @@ fn show_cart(customer: &mut Customer) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+fn show_orders(customer: &mut Customer) -> Result<(), Box<dyn Error>> {
+    let show_cmd = ShowOrdersCommand {};
+    let str = show_cmd.run(customer)?;
+    println!("{}", str);
+    Ok(())
+}
+
 fn customer_main() {
     let mut customer = Customer::default();
     loop {
@@ -233,7 +240,7 @@ fn customer_main() {
             "1" => list_all_products(),
             "2" => Ok(()),
             "3" => add_to_cart(&mut customer),
-            "4" => Ok(()),
+            "4" => show_cart(&mut customer),
             "5" => Ok(()),
             "6" => Ok(()),
             "0" => break,
