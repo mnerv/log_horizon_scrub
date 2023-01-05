@@ -28,7 +28,7 @@ CREATE TABLE supplier(
     id SERIAL NOT NULL UNIQUE,
     admin_id INT NOT NULL,
     address_id INT NOT NULL UNIQUE,
-    name VARCHAR(30) NOT NULL,
+    name VARCHAR(128) NOT NULL,
     description VARCHAR(512),
     orgnum VARCHAR(30) NOT NULL UNIQUE,
     PRIMARY KEY (id),
@@ -59,7 +59,7 @@ CREATE TABLE discount(
 CREATE TABLE product(
     id SERIAL NOT NULL UNIQUE,
     supplier_id INT NOT NULL,
-    name VARCHAR(30) NOT NULL,
+    name VARCHAR(128) NOT NULL,
     description VARCHAR(1024),
     quantity INT NOT NULL,
     price NUMERIC(16,2) NOT NULL,

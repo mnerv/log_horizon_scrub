@@ -126,9 +126,10 @@ CREATE OR REPLACE PROCEDURE show_orders(
 LANGUAGE plpgsql
 AS $$
 BEGIN
-    SELECT * FROM orders WHERE customer_id=current_customer_id
-    JOIN order_item ON orders.id=order_item.order_id
-    JOIN product ON order_item.product_id = product.id;
+    SELECT * FROM orders
+    INNER JOIN order_item ON orders.id=order_item.order_id
+    INNER JOIN product ON order_item.product_id = product.id
+    WHERE customer_id=current_customer_id;
 END;
 $$;
 
