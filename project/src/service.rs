@@ -361,12 +361,12 @@ pub struct ShowOrdersCommand {}
 impl CustomerCommand for ShowOrdersCommand {
     fn run(&self, customer: &mut Customer) -> Result<(), Box<dyn Error>> {
         let mut db = connect_db()?;
-        let order_rows = db.query(
-            "SELECT * FROM item_order WHERE customer_id=$1",
-            &[&customer.id()],
-        )?;
-        for row in order_rows {
-            // TODO Show both order data and product data
+        let order_rows = db.query("SELECT * FROM orders
+            INNER JOIN order_item ON orders.id=order_item.order_id
+            INNER JOIN product ON order_item.product_id = product.id
+            WHERE customer_id=$1;", &[&customer.id()])?;
+        for row in order_rows{
+
         }
         Ok(())
     }
