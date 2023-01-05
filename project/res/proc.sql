@@ -119,3 +119,34 @@ BEGIN
     DELETE FROM cart_item WHERE cart_item.cart_id = current_cart_id;
 END;
 $$;
+
+CREATE OR REPLACE PROCEDURE show_orders(
+    current_customer_id INT
+)
+AS $$
+BEGIN
+    SELECT * FROM orders WHERE customer_id=current_customer_id
+    JOIN order_item ON orders.id=order_item.order_id
+    JOIN product ON order_item.product_id = product.id;
+END;
+$$;
+
+CREATE OR REPLACE PROCEDURE delete_order(
+    current_order_id INT
+)
+AS $$
+BEGIN
+    DELETE FROM orders 
+    WHERE id=current_order_id;
+END;
+$$;
+
+CREATE OR REPLACE PROCEDURE product_search(
+    search_string VARCHAR
+)
+AS $$
+BEGIN
+    SELECT * FROM product
+    WHERE name LIKE '%' + search_string + '%';
+END;
+$$;
