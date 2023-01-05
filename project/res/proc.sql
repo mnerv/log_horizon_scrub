@@ -123,6 +123,7 @@ $$;
 CREATE OR REPLACE PROCEDURE show_orders(
     current_customer_id INT
 )
+LANGUAGE plpgsql
 AS $$
 BEGIN
     SELECT * FROM orders WHERE customer_id=current_customer_id
@@ -134,6 +135,7 @@ $$;
 CREATE OR REPLACE PROCEDURE delete_order(
     current_order_id INT
 )
+LANGUAGE plpgsql
 AS $$
 BEGIN
     DELETE FROM orders 
@@ -144,6 +146,7 @@ $$;
 CREATE OR REPLACE PROCEDURE product_search(
     search_string VARCHAR
 )
+LANGUAGE plpgsql
 AS $$
 BEGIN
     SELECT * FROM product
