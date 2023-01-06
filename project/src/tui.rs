@@ -180,6 +180,12 @@ fn show_orders(customer: &mut Customer) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+fn checkout(customer: &mut Customer) -> Result<(), Box<dyn Error>> {
+    let checkout_cmd = CheckoutCommand {};
+    checkout_cmd.run(customer)?;
+    Ok(())
+}
+
 fn customer_main() {
     let mut customer = Customer::default();
     loop {
@@ -226,6 +232,7 @@ fn customer_main() {
         println!("4. Show shopping cart");
         println!("5. Show orders");
         println!("6. Delete an order");
+        println!("7. Checkout");
         println!("0. Log out");
 
         let input = read_input(" option: ");
@@ -236,6 +243,7 @@ fn customer_main() {
             "4" => show_cart(&mut customer),
             "5" => Ok(()),
             "6" => Ok(()),
+            "7" => checkout(&mut customer),
             "0" => break,
             _ => Ok(()),
         };

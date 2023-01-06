@@ -345,6 +345,7 @@ impl CustomerCommand for ShowCartCommand {
         let cart_id: i32 = cart_row.get(0);
         let cart = db.query("SELECT * FROM cart_item WHERE cart_id=$1", &[&cart_id])?;
 
+        // FIXME: Maybe return a better looking formatting
         println!("id, name, price, quantity, sum");
         for row in cart {
             let product_id: i32 = row.get("product_id");
@@ -368,6 +369,49 @@ impl CustomerCommand for ShowCartCommand {
             println!("{}\n", str);
         }
         Ok(())
+    }
+}
+
+pub struct CheckoutCommand {}
+impl CustomerCommand for CheckoutCommand {
+    fn run(&self, customer: &mut Customer) -> Result<(), Box<dyn Error>> {
+        let mut db = connect_db()?;
+
+        let cart_row = db.query_one(
+            "SELECT id FROM cart WHERE customer_id = $1",
+            &[&customer.id()],
+        )?;
+
+        let cart_id: i32 = cart_row.get(0);
+
+        let order_row = db.query_one(
+            "INSERT INTO orders (customer_id, created, status)
+             VALUES ($1, CURRENT_TIMESTAMP, $2)
+             RETURNING id",
+            &[&customer.id(), &"pending"],
+        );
+
+        if let Ok(order) = order_row {
+            let order_id: i32 = order.get("id");
+            let items = db.query("SELECT * FROM cart_item WHERE cart_id = $1", &[&cart_id])?;
+
+            let statement = db.prepare(
+                "INSERT INTO order_item(order_id, product_id, quantity) VALUES ($1, $2, $3)",
+            )?;
+
+            for item in items {
+                let product_id: i32 = item.get("product_id");
+                let quantity: i32 = item.get("quantity");
+                db.execute(&statement, &[&order_id, &product_id, &quantity])?;
+            }
+
+            Ok(())
+        } else {
+            Err(Box::new(io::Error::new(
+                ErrorKind::Other,
+                "Failed to checkout cart",
+            )))
+        }
     }
 }
 
