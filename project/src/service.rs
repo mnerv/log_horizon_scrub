@@ -338,35 +338,34 @@ pub struct ShowCartCommand {}
 impl CustomerCommand for ShowCartCommand {
     fn run(&self, customer: &mut Customer) -> Result<(), Box<dyn Error>> {
         let mut db = connect_db()?;
-        let list_id_row = db.query_one(
-            "SELECT id FROM item_list
-                                   WHERE customer_id=$1",
+        let cart_row = db.query_one(
+            "SELECT id FROM cart WHERE customer_id=$1",
             &[&customer.id()],
         )?;
-        let list_id: i32 = list_id_row.get(0);
-        let cart = db.query("SELECT * FROM item_cart WHERE list_id=$1", &[&list_id])?;
+        let cart_id: i32 = cart_row.get(0);
+        let cart = db.query("SELECT * FROM cart_item WHERE cart_id=$1", &[&cart_id])?;
 
+        println!("id, name, price, quantity, sum");
         for row in cart {
-            let product_id: i32 = row.get(1);
-            let product_row = db.query_one("SELECT * FROM product WHERE id=$1", &[&product_id])?;
-            let product = Product {
-                id: product_row.get(0),
-                supplier_id: product_row.get(1),
-                name: product_row.get(2),
-                description: product_row.get(3),
-                quantity: product_row.get(4),
-                price: product_row.get(5),
-            };
+            let product_id: i32 = row.get("product_id");
+            let quantity: i32 = row.get("quantity");
+            let product_row = db.query_one(
+                "SELECT name, CAST(price AS DOUBLE PRECISION) as price FROM product WHERE id=$1",
+                &[&product_id],
+            )?;
+
+            let name: String = product_row.get("name");
+            let price: f64 = product_row.get("price");
+
             let str = format!(
-                "{} {} {} {} {} {}\n",
-                product.id,
-                product.supplier_id,
-                product.name,
-                product.description,
-                product.quantity,
-                product.price
+                "{}, {}, {}, {}, {}",
+                product_id,
+                name,
+                price,
+                quantity,
+                price * f64::from(quantity)
             );
-            println!("{}", str);
+            println!("{}\n", str);
         }
         Ok(())
     }

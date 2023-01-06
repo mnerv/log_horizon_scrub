@@ -50,14 +50,22 @@ pub struct Product {
     pub price: f64,
 }
 impl Product {
-    fn new (
-    id: i32,
-    supplier_id: i32,
-    name: String,
-    description: String,
-    quantity: i32,
-    price: f64) -> Product{
-        Product { id , supplier_id,  name,  description,  quantity, price }
+    fn new(
+        id: i32,
+        supplier_id: i32,
+        name: String,
+        description: String,
+        quantity: i32,
+        price: f64,
+    ) -> Product {
+        Product {
+            id,
+            supplier_id,
+            name,
+            description,
+            quantity,
+            price,
+        }
     }
 }
 
@@ -67,11 +75,23 @@ pub struct Address {
     street: String,
     city: String,
     country: String,
-    telephone: String
+    telephone: String,
 }
 impl Address {
-    pub fn new(id: i32, street: String, city: String, country: String, telephone: String) -> Address {
-        Address { id, street, city, country, telephone }
+    pub fn new(
+        id: i32,
+        street: String,
+        city: String,
+        country: String,
+        telephone: String,
+    ) -> Address {
+        Address {
+            id,
+            street,
+            city,
+            country,
+            telephone,
+        }
     }
 
     pub fn default() -> Address {
@@ -103,7 +123,10 @@ impl Admin {
     }
 
     pub fn default() -> Admin {
-        Admin { id: 0, email: "".to_string() }
+        Admin {
+            id: 0,
+            email: "".to_string(),
+        }
     }
 
     pub fn login(&mut self, admin: &Admin) {
@@ -136,11 +159,23 @@ pub struct Customer {
     first_name: String,
     last_name: String,
     email: String,
-    address: Address
+    address: Address,
 }
 impl Customer {
-    pub fn new(id: i32, first_name: String, last_name: String, email: String, address: Address) -> Customer {
-        Customer { id, first_name, last_name, email, address }
+    pub fn new(
+        id: i32,
+        first_name: String,
+        last_name: String,
+        email: String,
+        address: Address,
+    ) -> Customer {
+        Customer {
+            id,
+            first_name,
+            last_name,
+            email,
+            address,
+        }
     }
 
     pub fn default() -> Customer {
@@ -169,8 +204,8 @@ impl LoginTrait for Customer {
     fn logout(&mut self) {
         self.id = 0;
         self.first_name = String::new();
-        self.last_name  = String::new();
-        self.email   = String::new();
+        self.last_name = String::new();
+        self.email = String::new();
         self.address = Address::default();
     }
 
