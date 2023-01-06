@@ -40,40 +40,6 @@ impl Command<()> for ClearCommand {
     }
 }
 
-pub struct AddAddressCommand {
-    pub street: String,
-    pub postcode: String,
-    pub city: String,
-    pub country: String,
-    pub telephone: String,
-}
-impl Command<i32> for AddAddressCommand {
-    fn run(&self) -> Result<i32, Box<dyn Error>> {
-        let mut db = connect_db()?;
-        let insert = db.query_one(
-            "INSERT INTO address(street, postcode, city, country, telephone)
-             VALUES ($1, $2, $3, $4, $5)
-             RETURNING *",
-            &[
-                &self.street,
-                &self.postcode,
-                &self.city,
-                &self.country,
-                &self.telephone,
-            ],
-        );
-        if let Ok(ok) = insert {
-            let id: i32 = ok.get("id");
-            Ok(id)
-        } else {
-            Err(Box::new(io::Error::new(
-                ErrorKind::Other,
-                "Failed to create address",
-            )))
-        }
-    }
-}
-
 pub struct RegiserCustomerCommand {
     pub first_name: String,
     pub last_name: String,
@@ -88,24 +54,19 @@ pub struct RegiserCustomerCommand {
 impl CustomerCommand for RegiserCustomerCommand {
     fn run(&self, customer: &mut Customer) -> Result<(), Box<dyn Error>> {
         let mut db = connect_db()?;
-        let address_command = AddAddressCommand {
-            street: self.street.to_owned(),
-            postcode: self.postcode.to_owned(),
-            city: self.city.to_owned(),
-            country: self.country.to_owned(),
-            telephone: self.telephone.to_owned(),
-        };
-        let address_id = address_command.run()?;
 
         let ok_insert = db.execute(
-            "INSERT INTO customer(address_id, first_name, last_name, email, password)
-             VALUES ($1, $2, $3, $4, $5)",
+            "CALL insert_customer($1, $2, $3, $4, $5, $6, $7, $8, $9)",
             &[
-                &address_id,
                 &self.first_name,
                 &self.last_name,
                 &self.email,
                 &self.password,
+                &self.street,
+                &self.postcode,
+                &self.city,
+                &self.country,
+                &self.telephone,
             ],
         )?;
 
@@ -221,21 +182,35 @@ impl CustomerCommand for LoginCustomerCommand {
 
 pub struct AddSupplierCommand {
     pub admin_id: i32,
-    pub address_id: i32,
     pub name: String,
+    pub description: String,
+    pub orgnum: String,
+    pub street: String,
+    pub postcode: String,
+    pub city: String,
+    pub country: String,
+    pub telephone: String,
 }
 impl Command<()> for AddSupplierCommand {
     fn run(&self) -> Result<(), Box<dyn Error>> {
         let mut db = connect_db()?;
         let ok_insert = db.execute(
-            "INSERT INTO supplier(admin_id, address_id, name) VALUES ($1, $2, $3)",
-            &[&self.admin_id, &self.address_id, &self.name],
+            "CALL insert_supplier($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+            &[
+                &self.admin_id,
+                &self.name,
+                &self.description,
+                &self.orgnum,
+                &self.street,
+                &self.postcode,
+                &self.city,
+                &self.country,
+                &self.telephone,
+            ],
         )?;
+
         if ok_insert == 1 {
-            Err(Box::new(io::Error::new(
-                ErrorKind::Other,
-                "Not implemented",
-            )))
+            Ok(())
         } else {
             Err(Box::new(io::Error::new(
                 ErrorKind::Other,
@@ -258,7 +233,7 @@ impl Command<()> for AddProductCommand {
 
         let ok_insert = db.execute(
             "INSERT INTO product(supplier_id, name, description, quantity, price)
-             VALUES ($1,$2,$3,$4)",
+             VALUES ($1, $2, $3, $4)",
             &[&self.supplier_id, &self.name, &self.quantity, &self.price],
         )?;
         if ok_insert == 1 {
@@ -304,18 +279,58 @@ pub struct AddToCart {
 impl CustomerCommand for AddToCart {
     fn run(&self, customer: &mut Customer) -> Result<(), Box<dyn Error>> {
         let mut db = connect_db()?;
-        let list_id_row = db.query_one(
-            "SELECT id FROM item_list
-                                   WHERE customer_id=$1",
+
+        let cart_row = db.query_one(
+            "SELECT cart.id FROM cart INNER JOIN customer ON customer.id = $1",
             &[&customer.id()],
-        )?;
-        let list_id: i32 = list_id_row.get(0);
-        let cart = db.query_one(
-            "INSERT INTO item_cart ($1, $2, $3) 
-                                ON CONFLICT UPDATE",
-            &[&list_id, &self.product_id, &self.quantity],
         );
-        Ok(())
+
+        let mut cart_id: i32 = 0;
+        if let Ok(cart) = cart_row {
+            cart_id = cart.get("id");
+        } else {
+            db.execute(
+                "INSERT INTO cart(customer_id, updated) VALUES ($1, CURRENT_TIMESTAMP)",
+                &[&customer.id()],
+            )?;
+        }
+
+        // Check the order_id, product_id primary keys
+        let cart_item_exist = db.query_one(
+            "SELECT id, quantity FROM cart_item WHERE cart_id = $1 AND product_id = $2",
+            &[&cart_id, &self.product_id],
+        );
+
+        let mut is_ok: bool = false;
+
+        if let Ok(cart_item) = cart_item_exist {
+            let id: i32 = cart_item.get(0);
+            // FIXME: Add and Remove the quantity and also check if it is possible to do that with in stock quntity.
+            db.execute(
+                "UPDATE cart_item SET quantity = $1 WHERE id = $2",
+                &[&self.quantity, &id],
+            )?;
+            is_ok = true;
+        } else {
+            db.execute(
+                "INSERT INTO cart_item VALUES ($1, $2, $3)",
+                &[&cart_id, &self.product_id, &self.quantity],
+            )?;
+            is_ok = true;
+        }
+
+        if is_ok {
+            db.execute(
+                "UPDATE cart SET updated = CURRENT_TIMESTAMP WHERE id = $1",
+                &[&cart_id],
+            )?;
+            Ok(())
+        } else {
+            Err(Box::new(io::Error::new(
+                ErrorKind::Other,
+                "Failed to add product to cart",
+            )))
+        }
     }
 }
 
@@ -361,12 +376,18 @@ pub struct ShowOrdersCommand {}
 impl CustomerCommand for ShowOrdersCommand {
     fn run(&self, customer: &mut Customer) -> Result<(), Box<dyn Error>> {
         let mut db = connect_db()?;
-        let order_rows = db.query("SELECT * FROM orders
+
+        //let order_call_rows = db.query("CALL show_orders($1)", &[&customer.id()])?;
+        let order_rows = db.query(
+            "SELECT * FROM orders
             INNER JOIN order_item ON orders.id=order_item.order_id
             INNER JOIN product ON order_item.product_id = product.id
-            WHERE customer_id=$1;", &[&customer.id()])?;
-        for row in order_rows{
-
+            WHERE customer_id=$1;",
+            &[&customer.id()],
+        )?;
+        for row in order_rows {
+            // let
+            // println!("{}", row.get(0));
         }
         Ok(())
     }

@@ -29,13 +29,6 @@ fn admin_create_supplier() -> Result<(), Box<dyn Error>> {
     let city = read_input("city: ");
     let country = read_input("country: ");
     let telephone = read_input("telephone nr: ");
-    let address_command = AddAddressCommand {
-        street,
-        postcode,
-        city,
-        country,
-        telephone,
-    };
 
     //let add_supplier = AddSupplierCommand {
     //    admin_id,
@@ -182,8 +175,8 @@ fn show_cart(customer: &mut Customer) -> Result<(), Box<dyn Error>> {
 
 fn show_orders(customer: &mut Customer) -> Result<(), Box<dyn Error>> {
     let show_cmd = ShowOrdersCommand {};
-    let str = show_cmd.run(customer)?;
-    println!("{}", str);
+    show_cmd.run(customer)?;
+    // println!("{}", str);
     Ok(())
 }
 
