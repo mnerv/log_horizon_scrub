@@ -169,7 +169,7 @@ fn add_to_cart(customer: &mut Customer) -> Result<(), Box<dyn Error>> {
 fn show_cart(customer: &mut Customer) -> Result<(), Box<dyn Error>> {
     let show_cmd = ShowCartCommand {};
     let str = show_cmd.run(customer)?;
-    //println!("{}", str);
+    println!("{}", str);
     Ok(())
 }
 
@@ -191,6 +191,13 @@ fn search_product() -> Result<(), Box<dyn Error>> {
     let search_cmd = SearchProductCommand { search_str };
     let str = search_cmd.run()?;
     println!("{}", str);
+    Ok(())
+}
+
+fn delete_order(customer: &mut Customer) -> Result<(), Box<dyn Error>> {
+    let order_id = read_input("Order id:").parse::<i32>().unwrap();
+    let delete_cmd = DeleteOrderCommand { order_id };
+    delete_cmd.run(customer)?;
     Ok(())
 }
 
@@ -250,7 +257,7 @@ fn customer_main() {
             "3" => add_to_cart(&mut customer),
             "4" => show_cart(&mut customer),
             "5" => show_orders(&mut customer),
-            "6" => Ok(()),
+            "6" => delete_order(&mut customer),
             "7" => checkout(&mut customer),
             "0" => break,
             _ => Ok(()),

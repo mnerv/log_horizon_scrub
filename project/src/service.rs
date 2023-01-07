@@ -8,7 +8,6 @@
  * @copyright Copyright (c) 2022
  */
 use chrono::NaiveDateTime;
-use postgres::types::FromSql;
 use postgres::{Client, NoTls};
 use std::{error::Error, io::Write};
 use std::{io, io::ErrorKind};
@@ -297,8 +296,6 @@ impl CustomerCommand<()> for AddToCart {
             )?;
         }
 
-        println!("{}, {}", cart_id, self.product_id);
-
         // Check the order_id, product_id primary keys
         let cart_item_exist = db.query_one(
             "SELECT product_id, quantity FROM cart_item WHERE cart_id = $1 AND product_id = $2",
@@ -327,14 +324,12 @@ impl CustomerCommand<()> for AddToCart {
             }
 
             // FIXME: Add and Remove the quantity and also check if it is possible to do that with in stock quntity.
-
             db.execute(
                 "UPDATE cart_item SET quantity = $1 WHERE cart_id = $2 AND product_id = $3",
                 &[&new_quantity, &cart_id, &product_id],
             )?;
             is_ok = true;
         } else {
-            println!("yyyyyyy");
             db.execute(
                 "INSERT INTO cart_item VALUES ($1, $2, $3)",
                 &[&cart_id, &self.product_id, &self.quantity],
@@ -369,7 +364,7 @@ impl CustomerCommand<String> for ShowCartCommand {
         let cart = db.query("SELECT * FROM cart_item WHERE cart_id=$1", &[&cart_id])?;
 
         // FIXME: Maybe return a better looking formatting
-        let mut str: String = "id, name, price, quantity, sum".to_string();
+        let mut str: String = "id, name, price, quantity, sum\n".to_string();
         for row in cart {
             let product_id: i32 = row.get("product_id");
             let quantity: i32 = row.get("quantity");
@@ -423,6 +418,8 @@ impl CustomerCommand<()> for CheckoutCommand {
                 db.execute(&statement, &[&order_id, &product_id, &quantity])?;
             }
 
+            db.execute("DELETE FROM cart_item WHERE cart_id = $1", &[&cart_id])?;
+
             Ok(())
         } else {
             Err(Box::new(io::Error::new(
@@ -430,6 +427,22 @@ impl CustomerCommand<()> for CheckoutCommand {
                 "Failed to checkout cart",
             )))
         }
+    }
+}
+
+pub struct DeleteOrderCommand {
+    pub order_id: i32,
+}
+impl CustomerCommand<()> for DeleteOrderCommand {
+    fn run(&self, customer: &mut Customer) -> Result<(), Box<dyn Error>> {
+        let mut db = connect_db()?;
+
+        db.execute(
+            "DELETE FROM orders WHERE customer_id = $1 AND id = $2 AND confirmed_by_admin IS NULL",
+            &[&customer.id(), &self.order_id],
+        )?;
+
+        Ok(())
     }
 }
 
