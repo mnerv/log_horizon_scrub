@@ -1,6 +1,7 @@
 use crate::command::*;
 use crate::hope::*;
 use crate::service::*;
+use std::{error::Error, io::Write};
 /**
  * @file   tui.rs
  * @author Pratchaya Khansomboon (me@mononerv.dev)
@@ -11,7 +12,6 @@ use crate::service::*;
  *
  * @copyright Copyright (c) 2022
  */
-use std::{error::Error, io::Write};
 
 fn read_input(label: &str) -> String {
     let mut input = String::new();
@@ -175,8 +175,8 @@ fn show_cart(customer: &mut Customer) -> Result<(), Box<dyn Error>> {
 
 fn show_orders(customer: &mut Customer) -> Result<(), Box<dyn Error>> {
     let show_cmd = ShowOrdersCommand {};
-    show_cmd.run(customer)?;
-    // println!("{}", str);
+    let str = show_cmd.run(customer)?;
+    println!("{}", str);
     Ok(())
 }
 
@@ -249,7 +249,7 @@ fn customer_main() {
             "2" => search_product(),
             "3" => add_to_cart(&mut customer),
             "4" => show_cart(&mut customer),
-            "5" => Ok(()),
+            "5" => show_orders(&mut customer),
             "6" => Ok(()),
             "7" => checkout(&mut customer),
             "0" => break,

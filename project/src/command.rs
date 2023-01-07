@@ -8,17 +8,16 @@
  */
 use std::error::Error;
 
-use crate::hope::{Customer, Admin};
+use crate::hope::{Admin, Customer};
 
-pub trait CustomerCommand {
-    fn run(&self, customer: &mut Customer) -> Result<(), Box<dyn Error>>;
+pub trait CustomerCommand<T> {
+    fn run(&self, customer: &mut Customer) -> Result<T, Box<dyn Error>>;
 }
 
-pub trait AdminCommand {
-    fn run(&self, admin: &mut Admin) -> Result<(), Box<dyn Error>>;
+pub trait AdminCommand<T> {
+    fn run(&self, admin: &mut Admin) -> Result<T, Box<dyn Error>>;
 }
 
 pub trait Command<T> {
     fn run(&self) -> Result<T, Box<dyn Error>>;
 }
-

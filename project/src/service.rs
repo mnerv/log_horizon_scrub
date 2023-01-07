@@ -7,6 +7,8 @@
  *
  * @copyright Copyright (c) 2022
  */
+use chrono::NaiveDateTime;
+use postgres::types::FromSql;
 use postgres::{Client, NoTls};
 use std::{error::Error, io::Write};
 use std::{io, io::ErrorKind};
@@ -51,7 +53,7 @@ pub struct RegiserCustomerCommand {
     pub country: String,
     pub telephone: String,
 }
-impl CustomerCommand for RegiserCustomerCommand {
+impl CustomerCommand<()> for RegiserCustomerCommand {
     fn run(&self, customer: &mut Customer) -> Result<(), Box<dyn Error>> {
         let mut db = connect_db()?;
 
@@ -90,7 +92,7 @@ pub struct LoginAdminCommand {
     pub email: String,
     pub password: String,
 }
-impl AdminCommand for LoginAdminCommand {
+impl AdminCommand<()> for LoginAdminCommand {
     fn run(&self, admin: &mut Admin) -> Result<(), Box<dyn Error>> {
         let mut db = connect_db()?;
         let email = db.query_one("SELECT email FROM admin WHERE email = $1", &[&self.email]);
@@ -131,7 +133,7 @@ pub struct LoginCustomerCommand {
     pub email: String,
     pub password: String,
 }
-impl CustomerCommand for LoginCustomerCommand {
+impl CustomerCommand<()> for LoginCustomerCommand {
     fn run(&self, customer: &mut Customer) -> Result<(), Box<dyn Error>> {
         let mut db = connect_db()?;
         let email = db.query_one(
@@ -276,7 +278,7 @@ pub struct AddToCart {
     pub product_id: i32,
     pub quantity: i32,
 }
-impl CustomerCommand for AddToCart {
+impl CustomerCommand<()> for AddToCart {
     fn run(&self, customer: &mut Customer) -> Result<(), Box<dyn Error>> {
         let mut db = connect_db()?;
 
@@ -295,23 +297,44 @@ impl CustomerCommand for AddToCart {
             )?;
         }
 
+        println!("{}, {}", cart_id, self.product_id);
+
         // Check the order_id, product_id primary keys
         let cart_item_exist = db.query_one(
-            "SELECT id, quantity FROM cart_item WHERE cart_id = $1 AND product_id = $2",
+            "SELECT product_id, quantity FROM cart_item WHERE cart_id = $1 AND product_id = $2",
             &[&cart_id, &self.product_id],
         );
+
+        let product = db.query_one("SELECT * FROM product WHERE id = $1", &[&self.product_id])?;
 
         let is_ok: bool;
 
         if let Ok(cart_item) = cart_item_exist {
-            let id: i32 = cart_item.get(0);
+            let product_id: i32 = cart_item.get(0);
+            let quantity: i32 = cart_item.get(1);
+
+            let new_quantity = quantity + self.quantity;
+
+            let product_quantity: i32 = product.get("quantity");
+            if new_quantity > product_quantity {
+                return Err(Box::new(io::Error::new(
+                    ErrorKind::Other,
+                    format!(
+                        "Can't add more than current available stock: in stock {}",
+                        product_quantity
+                    ),
+                )));
+            }
+
             // FIXME: Add and Remove the quantity and also check if it is possible to do that with in stock quntity.
+
             db.execute(
-                "UPDATE cart_item SET quantity = $1 WHERE id = $2",
-                &[&self.quantity, &id],
+                "UPDATE cart_item SET quantity = $1 WHERE cart_id = $2 AND product_id = $3",
+                &[&new_quantity, &cart_id, &product_id],
             )?;
             is_ok = true;
         } else {
+            println!("yyyyyyy");
             db.execute(
                 "INSERT INTO cart_item VALUES ($1, $2, $3)",
                 &[&cart_id, &self.product_id, &self.quantity],
@@ -335,8 +358,8 @@ impl CustomerCommand for AddToCart {
 }
 
 pub struct ShowCartCommand {}
-impl CustomerCommand for ShowCartCommand {
-    fn run(&self, customer: &mut Customer) -> Result<(), Box<dyn Error>> {
+impl CustomerCommand<String> for ShowCartCommand {
+    fn run(&self, customer: &mut Customer) -> Result<String, Box<dyn Error>> {
         let mut db = connect_db()?;
         let cart_row = db.query_one(
             "SELECT id FROM cart WHERE customer_id=$1",
@@ -346,7 +369,7 @@ impl CustomerCommand for ShowCartCommand {
         let cart = db.query("SELECT * FROM cart_item WHERE cart_id=$1", &[&cart_id])?;
 
         // FIXME: Maybe return a better looking formatting
-        println!("id, name, price, quantity, sum");
+        let mut str: String = "id, name, price, quantity, sum".to_string();
         for row in cart {
             let product_id: i32 = row.get("product_id");
             let quantity: i32 = row.get("quantity");
@@ -357,23 +380,18 @@ impl CustomerCommand for ShowCartCommand {
 
             let name: String = product_row.get("name");
             let price: f64 = product_row.get("price");
+            let sum = price * f64::from(quantity);
 
-            let str = format!(
-                "{}, {}, {}, {}, {}",
-                product_id,
-                name,
-                price,
-                quantity,
-                price * f64::from(quantity)
-            );
-            println!("{}\n", str);
+            str.push_str(&format!(
+                "{product_id}, {name}, {price}, {quantity}, {sum}\n"
+            ));
         }
-        Ok(())
+        Ok(str)
     }
 }
 
 pub struct CheckoutCommand {}
-impl CustomerCommand for CheckoutCommand {
+impl CustomerCommand<()> for CheckoutCommand {
     fn run(&self, customer: &mut Customer) -> Result<(), Box<dyn Error>> {
         let mut db = connect_db()?;
 
@@ -416,23 +434,30 @@ impl CustomerCommand for CheckoutCommand {
 }
 
 pub struct ShowOrdersCommand {}
-impl CustomerCommand for ShowOrdersCommand {
-    fn run(&self, customer: &mut Customer) -> Result<(), Box<dyn Error>> {
+impl CustomerCommand<String> for ShowOrdersCommand {
+    fn run(&self, customer: &mut Customer) -> Result<String, Box<dyn Error>> {
         let mut db = connect_db()?;
 
         //let order_call_rows = db.query("CALL show_orders($1)", &[&customer.id()])?;
         let order_rows = db.query(
-            "SELECT * FROM orders
-            INNER JOIN order_item ON orders.id=order_item.order_id
-            INNER JOIN product ON order_item.product_id = product.id
-            WHERE customer_id=$1;",
+            "SELECT orders.id, status, CAST(SUM(product.price * order_item.quantity) AS DOUBLE PRECISION) AS price, orders.created FROM orders
+             INNER JOIN order_item ON orders.id=order_item.order_id
+             INNER JOIN product ON order_item.product_id = product.id
+             WHERE customer_id=$1
+             GROUP BY orders.id",
             &[&customer.id()],
         )?;
-        for row in order_rows {
-            // let
-            // println!("{}", row.get(0));
+
+        let mut str: String = "id, date, name, status, price\n".to_string();
+        for order in order_rows {
+            let id: i32 = order.get("id");
+            let status: String = order.get("status");
+            let price: f64 = order.get("price");
+            let date: NaiveDateTime = order.get("created");
+
+            str.push_str(&format!("{id}, {date}, {status}, {price}\n"));
         }
-        Ok(())
+        Ok(str)
     }
 }
 
@@ -466,8 +491,7 @@ impl Command<String> for SearchProductCommand {
             let supplier: String = product.get(5);
 
             str.push_str(&format!(
-                "{}, {}, {}, {}, {}, {}\n",
-                id, name, description, quantity, price, supplier
+                "{id}, {name}, {description}, {quantity}, {price}, {supplier}\n"
             ));
         }
         Ok(str)

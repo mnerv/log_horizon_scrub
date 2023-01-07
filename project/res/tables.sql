@@ -51,8 +51,8 @@ CREATE TABLE discount(
     id SERIAL NOT NULL UNIQUE,
     code VARCHAR(30) NOT NULL UNIQUE,
     name VARCHAR(30) NOT NULL,
-    start_date DATETIME,
-    end_date DATETIME,
+    start_date TIMESTAMP,
+    end_date TIMESTAMP,
     PRIMARY KEY(id)
 );
 
