@@ -1,7 +1,9 @@
 use crate::command::*;
 use crate::hope::*;
 use crate::service::*;
+use chrono::{DateTime, NaiveDateTime};
 use std::{error::Error, io::Write};
+
 /**
  * @file   tui.rs
  * @author Pratchaya Khansomboon (me@mononerv.dev)
@@ -19,6 +21,19 @@ fn read_input(label: &str) -> String {
     std::io::stdout().flush().unwrap();
     std::io::stdin().read_line(&mut input).unwrap();
     input.trim().to_string()
+}
+
+fn read_date(label: &str) -> Result<NaiveDateTime, Box<dyn Error>> {
+    let date_str = read_input(label);
+    let parse_from_str = NaiveDateTime::parse_from_str(&date_str, "%Y-%m-%d %H:%M:%S");
+    if let Ok(parsed) = parse_from_str {
+        return Ok(parsed);
+    }
+
+    Err(Box::new(std::io::Error::new(
+        std::io::ErrorKind::Other,
+        "Failed to parsed date",
+    )))
 }
 
 fn admin_create_supplier() -> Result<(), Box<dyn Error>> {
@@ -60,6 +75,60 @@ fn admin_create_product() -> Result<(), Box<dyn Error>> {
     )))
 }
 
+fn admin_edit_product_quantity(admin: &mut Admin) -> Result<(), Box<dyn Error>> {
+    let quantity = read_input("quantity: ").parse::<i32>()?;
+    let product_id = read_input("product id: ").parse::<i32>()?;
+    let edit_cmd = EditProductQuantityCommand {
+        product_id,
+        quantity,
+    };
+    edit_cmd.run(admin)?;
+    Ok(())
+}
+
+fn delete_product(admin: &mut Admin) -> Result<(), Box<dyn Error>> {
+    let product_id = read_input("product id: ").parse::<i32>()?;
+    let delete_cmd = DeleteProductCommand { product_id };
+    delete_cmd.run(admin)?;
+    Ok(())
+}
+
+fn add_new_discount(admin: &mut Admin) -> Result<(), Box<dyn Error>> {
+    let code = read_input("code: ");
+    let name = read_input("name: ");
+    let start = read_date("start: ")?;
+    let end = read_date("end: ")?;
+
+    let add_cmd = AddNewDiscountCommand {
+        code,
+        name,
+        start,
+        end,
+    };
+    add_cmd.run(admin)?;
+    Ok(())
+}
+
+fn view_discount_history(admin: &mut Admin) -> Result<(), Box<dyn Error>> {
+    let view_cmd = ViewDiscountHistoryCommand {};
+    let str = view_cmd.run(admin)?;
+    println!("{}", str);
+    Ok(())
+}
+
+fn assign_discount(admin: &mut Admin) -> Result<(), Box<dyn Error>> {
+    let discount_id = read_input("discount id: ").parse::<i32>()?;
+    let product_id = read_input("product id: ").parse::<i32>()?;
+    let factor = read_input("factor: ").parse::<f64>()?;
+    let assign_cmd = AssignDiscountCommand {
+        discount_id,
+        product_id,
+        factor,
+    };
+    assign_cmd.run(admin)?;
+    Ok(())
+}
+
 fn admin_home(admin: &mut Admin) {
     let pepper: &'static str = r#"
  /_/_  _  _    __/__  __
@@ -76,12 +145,15 @@ fn admin_home(admin: &mut Admin) {
         println!("  2. Add new product");
         println!("  3. Edit product");
         println!("  4. Delete product");
-        println!("  5. Search for product");
-        println!("  6. Add new discount");
-        println!("  7. Assign discount");
-        println!("  8. View discount history");
-        println!("  9. Confirm order");
-        println!(" 10. List products with max orders");
+        println!("  5. List product");
+        println!("  6. Search for product");
+        println!("  7. Add new discount");
+        println!("  8. Assign discount");
+        println!("  9. View discounted products");
+        println!(" 10. View discount history");
+        println!(" 11. List unconfirmed order");
+        println!(" 12. Confirm order");
+        println!(" 13. List products with max orders");
         println!("  0. Log out");
         println!();
 
@@ -89,14 +161,16 @@ fn admin_home(admin: &mut Admin) {
         let result = match choice.as_str() {
             "1" => admin_create_supplier(),
             "2" => admin_create_product(),
-            "3" => Ok(()),
-            "4" => Ok(()),
-            "5" => Ok(()),
-            "6" => Ok(()),
-            "7" => Ok(()),
-            "8" => Ok(()),
-            "9" => Ok(()),
-            "10" => Ok(()),
+            "3" => admin_edit_product_quantity(admin),
+            "4" => delete_product(admin),
+            "5" => list_all_products(),
+            "6" => search_product(),
+            "7" => add_new_discount(admin),
+            "8" => assign_discount(admin),
+            "9" => show_discounted_products(),
+            "10" => view_discount_history(admin),
+            "11" => Ok(()),
+            "12" => Ok(()),
             "0" => break,
             _ => Ok(()),
         };

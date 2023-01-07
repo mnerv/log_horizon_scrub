@@ -206,9 +206,19 @@ impl Command<()> for AddSupplierCommandV2 {
                 city,
                 country,
                 telephone
-            ) VALUES ($1, $2, $3, $4, $5)",
-            &[],
+            ) VALUES ($1, $2, $3, $4, $5)
+            RETURNING *",
+            &[
+                &self.street,
+                &self.postcode,
+                &self.city,
+                &self.country,
+                &self.telephone,
+            ],
         )?;
+
+        let address_id: i32 = added_address.get("id");
+
         // action.
         Ok(())
     }
@@ -281,6 +291,93 @@ impl Command<()> for AddProductCommand {
                 "Failed to create product",
             )))
         }
+    }
+}
+
+pub struct EditProductQuantityCommand {
+    pub product_id: i32,
+    pub quantity: i32,
+}
+impl AdminCommand<()> for EditProductQuantityCommand {
+    fn run(&self, admin: &mut Admin) -> Result<(), Box<dyn Error>> {
+        let mut db = connect_db()?;
+
+        let update = db.execute(
+            "UPDATE product SET quantity = $1 WHERE id = $2",
+            &[&self.quantity, &self.product_id],
+        )?;
+        Ok(())
+    }
+}
+
+pub struct DeleteProductCommand {
+    pub product_id: i32,
+}
+impl AdminCommand<()> for DeleteProductCommand {
+    fn run(&self, _: &mut Admin) -> Result<(), Box<dyn Error>> {
+        let mut db = connect_db()?;
+
+        db.execute(
+            "DELETE FROM product CASCADE WHERE id = $1",
+            &[&self.product_id],
+        )?;
+        Ok(())
+    }
+}
+
+pub struct AddNewDiscountCommand {
+    pub code: String,
+    pub name: String,
+    pub start: NaiveDateTime,
+    pub end: NaiveDateTime,
+}
+impl AdminCommand<()> for AddNewDiscountCommand {
+    fn run(&self, _: &mut Admin) -> Result<(), Box<dyn Error>> {
+        let mut db = connect_db()?;
+        db.execute(
+            "INSERT INTO discount(code, name, start_date, end_date) 
+            VALUES ($1, $2, $3, $4)",
+            &[&self.code, &self.name, &self.start, &self.end],
+        )?;
+        Ok(())
+    }
+}
+
+pub struct AssignDiscountCommand {
+    pub discount_id: i32,
+    pub product_id: i32,
+    pub factor: f64,
+}
+impl AdminCommand<()> for AssignDiscountCommand {
+    fn run(&self, _: &mut Admin) -> Result<(), Box<dyn Error>> {
+        let mut db = connect_db()?;
+        let factor = Decimal::from_f64(self.factor).unwrap();
+        db.execute(
+            "INSERT INTO discount_item(discount_id, product_id, factor) 
+            VALUES ($1, $2, $3)",
+            &[&self.discount_id, &self.product_id, &factor],
+        )?;
+        Ok(())
+    }
+}
+
+pub struct ViewDiscountHistoryCommand {}
+impl AdminCommand<String> for ViewDiscountHistoryCommand {
+    fn run(&self, admin: &mut Admin) -> Result<String, Box<dyn Error>> {
+        let mut db = connect_db()?;
+        let mut str = "id, code, name, start, end\n".to_string();
+
+        let discount_rows = db.query("SELECT * FROM discount", &[])?;
+        for row in discount_rows {
+            let discount_id: i32 = row.get("id");
+            let name: String = row.get("name");
+            let code: String = row.get("code");
+            let start: NaiveDateTime = row.get("start_date");
+            let end: NaiveDateTime = row.get("end_date");
+            str.push_str(&format!("{discount_id}, {name}, {code}, {start}, {end}\n"));
+        }
+
+        Ok(str)
     }
 }
 
