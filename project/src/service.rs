@@ -301,7 +301,7 @@ impl CustomerCommand for AddToCart {
             &[&cart_id, &self.product_id],
         );
 
-        let mut is_ok: bool = false;
+        let is_ok: bool;
 
         if let Ok(cart_item) = cart_item_exist {
             let id: i32 = cart_item.get(0);
@@ -433,5 +433,43 @@ impl CustomerCommand for ShowOrdersCommand {
             // println!("{}", row.get(0));
         }
         Ok(())
+    }
+}
+
+pub struct SearchProductCommand {
+    pub search_str: String,
+}
+impl Command<String> for SearchProductCommand {
+    fn run(&self) -> Result<String, Box<dyn Error>> {
+        let mut db = connect_db()?;
+
+        let product_rows = db.query(
+            "SELECT
+                product.id,
+                product.name,
+                product.description,
+                product.quantity,
+                CAST(product.price AS DOUBLE PRECISION) as price,
+                supplier.name
+             FROM product
+             INNER JOIN supplier ON supplier.id = product.supplier_id
+             WHERE LOWER(product.name) LIKE LOWER('%'||$1||'%') OR LOWER(supplier.name) LIKE LOWER('%'||$1||'%')",
+            &[&self.search_str],
+        )?;
+        let mut str: String = "id, name, description, quantity, price, supplier\n".to_string();
+        for product in product_rows {
+            let id: i32 = product.get(0);
+            let name: String = product.get(1);
+            let description: String = product.get(2);
+            let quantity: i32 = product.get(3);
+            let price: f64 = product.get(4);
+            let supplier: String = product.get(5);
+
+            str.push_str(&format!(
+                "{}, {}, {}, {}, {}, {}\n",
+                id, name, description, quantity, price, supplier
+            ));
+        }
+        Ok(str)
     }
 }

@@ -186,6 +186,14 @@ fn checkout(customer: &mut Customer) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+fn search_product() -> Result<(), Box<dyn Error>> {
+    let search_str = read_input("search: ");
+    let search_cmd = SearchProductCommand { search_str };
+    let str = search_cmd.run()?;
+    println!("{}", str);
+    Ok(())
+}
+
 fn customer_main() {
     let mut customer = Customer::default();
     loop {
@@ -238,7 +246,7 @@ fn customer_main() {
         let input = read_input(" option: ");
         let result = match input.as_str() {
             "1" => list_all_products(),
-            "2" => Ok(()),
+            "2" => search_product(),
             "3" => add_to_cart(&mut customer),
             "4" => show_cart(&mut customer),
             "5" => Ok(()),
