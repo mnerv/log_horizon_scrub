@@ -50,4 +50,3 @@ INSERT INTO product(supplier_id, name, description, quantity, price)
     (3, 'Boost Tier 1', 'Boost 1 rank', 10, 100.00),
     (3, 'Boost Tier 2', 'Boost 2 rank', 10, 200.00),
     (3, 'Boost Tier 3', 'Boost 2 rank', 10, 300.00);
-

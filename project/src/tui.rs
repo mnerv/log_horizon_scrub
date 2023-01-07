@@ -201,6 +201,13 @@ fn delete_order(customer: &mut Customer) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+fn show_discounted_products() -> Result<(), Box<dyn Error>> {
+    let show_cmd = ShowDiscountedProductsCommand {};
+    let str = show_cmd.run()?;
+    println!("{}", str);
+    Ok(())
+}
+
 fn customer_main() {
     let mut customer = Customer::default();
     loop {
@@ -243,22 +250,24 @@ fn customer_main() {
     loop {
         println!("1. Browse product");
         println!("2. Search product");
-        println!("3. Add to shopping cart");
-        println!("4. Show shopping cart");
-        println!("5. Show orders");
-        println!("6. Delete an order");
-        println!("7. Checkout");
+        println!("3. Show discounted products");
+        println!("4. Add to shopping cart");
+        println!("5. Show shopping cart");
+        println!("6. Show orders");
+        println!("7. Delete an order");
+        println!("8. Checkout");
         println!("0. Log out");
 
-        let input = read_input(" option: ");
+        let input = read_input("option: ");
         let result = match input.as_str() {
             "1" => list_all_products(),
             "2" => search_product(),
-            "3" => add_to_cart(&mut customer),
-            "4" => show_cart(&mut customer),
-            "5" => show_orders(&mut customer),
-            "6" => delete_order(&mut customer),
-            "7" => checkout(&mut customer),
+            "3" => show_discounted_products(),
+            "4" => add_to_cart(&mut customer),
+            "5" => show_cart(&mut customer),
+            "6" => show_orders(&mut customer),
+            "7" => delete_order(&mut customer),
+            "8" => checkout(&mut customer),
             "0" => break,
             _ => Ok(()),
         };
@@ -329,7 +338,7 @@ pub fn tui_main() {
             eprintln!(" {}", err_msg);
             err_msg = String::new();
         }
-        let choice = read_input(" option: ");
+        let choice = read_input("option: ");
 
         match choice.as_str() {
             "1" => admin_main(),

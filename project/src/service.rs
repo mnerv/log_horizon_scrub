@@ -9,6 +9,8 @@
  */
 use chrono::NaiveDateTime;
 use postgres::{Client, NoTls};
+use rust_decimal::prelude::FromPrimitive;
+use rust_decimal::Decimal;
 use std::{error::Error, io::Write};
 use std::{io, io::ErrorKind};
 
@@ -181,6 +183,37 @@ impl CustomerCommand<()> for LoginCustomerCommand {
     }
 }
 
+pub struct AddSupplierCommandV2 {
+    pub admin_id: i32,
+    pub name: String,
+    pub description: String,
+    pub orgnum: String,
+    pub street: String,
+    pub postcode: String,
+    pub city: String,
+    pub country: String,
+    pub telephone: String,
+}
+impl Command<()> for AddSupplierCommandV2 {
+    fn run(&self) -> Result<(), Box<dyn Error>> {
+        let mut db = connect_db()?;
+        let mut action = db.transaction()?;
+
+        let added_address = action.query_one(
+            "INSERT INTO address(
+                street,
+                postcode,
+                city,
+                country,
+                telephone
+            ) VALUES ($1, $2, $3, $4, $5)",
+            &[],
+        )?;
+        // action.
+        Ok(())
+    }
+}
+
 pub struct AddSupplierCommand {
     pub admin_id: i32,
     pub name: String,
@@ -258,16 +291,21 @@ impl Command<String> for ListProductsCommand {
 
         let mut str = String::new();
         str.push_str(&"id, supplier_id, name, description, quantity, price\n");
-        for row in db.query("SELECT id, supplier_id, name, description, quantity, CAST(price AS DOUBLE PRECISION) as price FROM product", &[])?{
-            let product = Product{
-                id: row.get(0),
-                supplier_id: row.get(1),
-                name: row.get(2),
-                description: row.get(3),
-                quantity: row.get(4),
-                price: row.get(5),
-            };
-            str.push_str(&format!("{}, {},{}, {}, {}, {}\n", product.id, product.supplier_id, product.name, product.description, product.quantity, product.price));
+        for row in db.query(
+            "SELECT id, supplier_id, name, description, quantity, price FROM product",
+            &[],
+        )? {
+            let id: i32 = row.get(0);
+            let supplier_id: i32 = row.get(1);
+            let name: String = row.get(2);
+            let description: String = row.get(3);
+            let quantity: i32 = row.get(4);
+            let price: Decimal = row.get(5);
+
+            str.push_str(&format!(
+                "{}, {}, {}, {}, {}, {}\n",
+                id, supplier_id, name, description, quantity, price
+            ));
         }
         Ok(str)
     }
@@ -369,13 +407,13 @@ impl CustomerCommand<String> for ShowCartCommand {
             let product_id: i32 = row.get("product_id");
             let quantity: i32 = row.get("quantity");
             let product_row = db.query_one(
-                "SELECT name, CAST(price AS DOUBLE PRECISION) as price FROM product WHERE id=$1",
+                "SELECT name, price FROM product WHERE id=$1",
                 &[&product_id],
             )?;
 
             let name: String = product_row.get("name");
-            let price: f64 = product_row.get("price");
-            let sum = price * f64::from(quantity);
+            let price: Decimal = product_row.get("price");
+            let sum = price * Decimal::from_i32(quantity).unwrap();
 
             str.push_str(&format!(
                 "{product_id}, {name}, {price}, {quantity}, {sum}\n"
@@ -497,7 +535,7 @@ impl CustomerCommand<String> for ShowOrdersCommand {
 
         //let order_call_rows = db.query("CALL show_orders($1)", &[&customer.id()])?;
         let order_rows = db.query(
-            "SELECT orders.id, status, CAST(SUM(product.price * order_item.quantity) AS DOUBLE PRECISION) AS price, orders.created FROM orders
+            "SELECT orders.id, status, SUM(product.price * order_item.quantity) AS price, orders.created FROM orders
              INNER JOIN order_item ON orders.id=order_item.order_id
              INNER JOIN product ON order_item.product_id = product.id
              WHERE customer_id=$1
@@ -509,7 +547,7 @@ impl CustomerCommand<String> for ShowOrdersCommand {
         for order in order_rows {
             let id: i32 = order.get("id");
             let status: String = order.get("status");
-            let price: f64 = order.get("price");
+            let price: Decimal = order.get("price");
             let date: NaiveDateTime = order.get("created");
 
             str.push_str(&format!("{id}, {date}, {status}, {price}\n"));
@@ -531,7 +569,7 @@ impl Command<String> for SearchProductCommand {
                 product.name,
                 product.description,
                 product.quantity,
-                CAST(product.price AS DOUBLE PRECISION) as price,
+                product.price,
                 supplier.name
              FROM product
              INNER JOIN supplier ON supplier.id = product.supplier_id
@@ -544,11 +582,51 @@ impl Command<String> for SearchProductCommand {
             let name: String = product.get(1);
             let description: String = product.get(2);
             let quantity: i32 = product.get(3);
-            let price: f64 = product.get(4);
+            let price: Decimal = product.get(4);
             let supplier: String = product.get(5);
 
             str.push_str(&format!(
                 "{id}, {name}, {description}, {quantity}, {price}, {supplier}\n"
+            ));
+        }
+        Ok(str)
+    }
+}
+
+pub struct ShowDiscountedProductsCommand {}
+impl Command<String> for ShowDiscountedProductsCommand {
+    //FIXME: this is a mess
+    fn run(&self) -> Result<String, Box<dyn Error>> {
+        let mut db = connect_db()?;
+        let discount_item_rows = db.query(
+            "SELECT product_id, discount_id, factor FROM discount_item",
+            &[],
+        )?;
+
+        let mut str: String =
+            "product id, name , discount id, discount name, discount percentage\n".to_string();
+        for row in discount_item_rows {
+            let product_id: i32 = row.get("product_id");
+            let discount_id: i32 = row.get("discount_id");
+
+            let product_row = db.query_one(
+                "SELECT product.id, product.name, price FROM product WHERE id = $1",
+                &[&product_id],
+            )?;
+
+            let product_id: i32 = product_row.get("id");
+            let product_name: String = product_row.get("name");
+            let product_price: Decimal = product_row.get("price");
+
+            let discount_row =
+                db.query_one("SELECT * FROM discount WHERE id = $1", &[&discount_id])?;
+
+            let discount_id: i32 = discount_row.get("id");
+            let discount_name: String = discount_row.get("name");
+            let discount_rate: Decimal = row.get("factor");
+
+            str.push_str(&format!(
+                "{product_id}, {product_name}, {product_price}, {discount_id}, {discount_name}, {discount_rate}\n"
             ));
         }
         Ok(str)
