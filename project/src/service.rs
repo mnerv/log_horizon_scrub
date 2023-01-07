@@ -267,7 +267,7 @@ impl Command<String> for ListProductsCommand {
                 quantity: row.get(4),
                 price: row.get(5),
             };
-            str.push_str(&format!("{} {} {} {} {} {}\n", product.id, product.supplier_id, product.name, product.description, product.quantity, product.price));
+            str.push_str(&format!("{}, {},{}, {}, {}, {}\n", product.id, product.supplier_id, product.name, product.description, product.quantity, product.price));
         }
         Ok(str)
     }
@@ -408,17 +408,35 @@ impl CustomerCommand<()> for CheckoutCommand {
             let order_id: i32 = order.get("id");
             let items = db.query("SELECT * FROM cart_item WHERE cart_id = $1", &[&cart_id])?;
 
-            let statement = db.prepare(
+            let mut transaction = db.transaction()?;
+            let insert_item = transaction.prepare(
                 "INSERT INTO order_item(order_id, product_id, quantity) VALUES ($1, $2, $3)",
             )?;
+
+            let product_q = transaction.prepare("SELECT * FROM product WHERE id = $1")?;
+            let dec_quantity =
+                transaction.prepare("UPDATE product SET quantity = $1 WHERE id = $2")?;
 
             for item in items {
                 let product_id: i32 = item.get("product_id");
                 let quantity: i32 = item.get("quantity");
-                db.execute(&statement, &[&order_id, &product_id, &quantity])?;
+                let product_row = transaction.query_one(&product_q, &[&product_id])?;
+                let product_quantity: i32 = product_row.get("quantity");
+
+                let new_quantity = product_quantity - quantity;
+                if new_quantity < 0 {
+                    transaction.rollback()?;
+                    return Err(Box::new(io::Error::new(
+                        ErrorKind::Other,
+                        "Failed to checkout cart",
+                    )));
+                }
+                transaction.execute(&dec_quantity, &[&new_quantity, &product_id])?;
+                transaction.execute(&insert_item, &[&order_id, &product_id, &quantity])?;
             }
 
-            db.execute("DELETE FROM cart_item WHERE cart_id = $1", &[&cart_id])?;
+            transaction.execute("DELETE FROM cart_item WHERE cart_id = $1", &[&cart_id])?;
+            transaction.commit()?;
 
             Ok(())
         } else {
@@ -436,6 +454,32 @@ pub struct DeleteOrderCommand {
 impl CustomerCommand<()> for DeleteOrderCommand {
     fn run(&self, customer: &mut Customer) -> Result<(), Box<dyn Error>> {
         let mut db = connect_db()?;
+
+        let order_row = db.query_one(
+            "SELECT id FROM orders WHERE customer_id = $1 AND id = $2 AND confirmed_by_admin IS NULL",
+            &[&customer.id(), &self.order_id],
+        )?;
+
+        let order_id: i32 = order_row.get(0);
+
+        let order_item_rows =
+            db.query("SELECT * FROM order_item WHERE order_id = $1", &[&order_id])?;
+
+        for row in order_item_rows {
+            let product_id: i32 = row.get("product_id");
+            let quantity: i32 = row.get("quantity");
+
+            let product_row =
+                db.query_one("SELECT * FROM product WHERE id = $1", &[&product_id])?;
+            let product_quantity: i32 = product_row.get("quantity");
+
+            let new_quantity = product_quantity + quantity;
+
+            db.execute(
+                "UPDATE product SET quantity = $1 WHERE id = $2",
+                &[&new_quantity, &product_id],
+            )?;
+        }
 
         db.execute(
             "DELETE FROM orders WHERE customer_id = $1 AND id = $2 AND confirmed_by_admin IS NULL",
