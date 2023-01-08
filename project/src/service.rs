@@ -371,6 +371,41 @@ impl AdminCommand<String> for ViewDiscountHistoryCommand {
     }
 }
 
+pub struct ViewUnconfirmedOrdersCommand {}
+impl AdminCommand<String> for ViewUnconfirmedOrdersCommand {
+    fn run(&self, _: &mut Admin) -> Result<String, Box<dyn Error>> {
+        let mut db = connect_db()?;
+        let order_rows = db.query("SELECT * FROM orders WHERE confirmed_by_admin IS NULL", &[])?;
+
+        let mut str: String = "id, customer, created, status\n".to_string();
+        for order in order_rows {
+            let id: i32 = order.get("id");
+            let customer: i32 = order.get("customer_id");
+            let created: NaiveDateTime = order.get("created");
+            let status: String = order.get("status");
+
+            str.push_str(&format!("{id}, {customer}, {created}, {status}\n"));
+        }
+        Ok(str)
+    }
+}
+
+pub struct ConfirmOrderCommand {
+    pub order_id: i32,
+}
+impl AdminCommand<()> for ConfirmOrderCommand {
+    fn run(&self, admin: &mut Admin) -> Result<(), Box<dyn Error>> {
+        let mut db = connect_db()?;
+
+        db.execute(
+            "UPDATE orders SET confirmed_by_admin=$1, status='confirmed'
+             WHERE id=$2",
+            &[&admin.id(), &self.order_id],
+        )?;
+        Ok(())
+    }
+}
+
 pub struct ListProductsCommand;
 impl Command<String> for ListProductsCommand {
     fn run(&self) -> Result<String, Box<dyn Error>> {

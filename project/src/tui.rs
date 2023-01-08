@@ -136,6 +136,21 @@ fn assign_discount(admin: &mut Admin) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+fn view_unconfirmed_orders(admin: &mut Admin) -> Result<(), Box<dyn Error>> {
+    let view_cmd = ViewUnconfirmedOrdersCommand {};
+    let str = view_cmd.run(admin)?;
+    println!("{}", str);
+    Ok(())
+}
+
+fn confirm_order(admin: &mut Admin) -> Result<(), Box<dyn Error>> {
+    let order_id: i32 = read_input("order id: ").parse::<i32>()?;
+    let cmd = ConfirmOrderCommand { order_id };
+    cmd.run(admin)?;
+
+    Ok(())
+}
+
 fn admin_home(admin: &mut Admin) {
     let pepper: &'static str = r#"
  /_/_  _  _    __/__  __
@@ -176,8 +191,9 @@ fn admin_home(admin: &mut Admin) {
             "8" => assign_discount(admin),
             "9" => show_discounted_products(),
             "10" => view_discount_history(admin),
-            "11" => Ok(()),
-            "12" => Ok(()),
+            "11" => view_unconfirmed_orders(admin),
+            "12" => confirm_order(admin),
+            "13" => Ok(()),
             "0" => break,
             _ => Ok(()),
         };
