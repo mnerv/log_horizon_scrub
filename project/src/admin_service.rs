@@ -332,3 +332,42 @@ impl AdminCommand<String> for ListProductsMaxOrderCommand {
         Ok(str)
     }
 }
+
+pub struct DiscountHistoryCommand {}
+impl AdminCommand<String> for DiscountHistoryCommand {
+    fn run(&self, _: &mut Admin) -> Result<String, Box<dyn Error>> {
+        let mut db = connect_db()?;
+        let discount_item_rows = db.query(
+            "SELECT product_id, discount_id, factor FROM discount_item
+             INNER JOIN discount ON discount_id = id",
+            &[],
+        )?;
+
+        let mut str: String =
+            "product id, name , discount id, discount name, discount percentage\n".to_string();
+        for row in discount_item_rows {
+            let product_id: i32 = row.get("product_id");
+            let discount_id: i32 = row.get("discount_id");
+
+            let product_row = db.query_one(
+                "SELECT product.id, product.name, price FROM product WHERE id = $1",
+                &[&product_id],
+            )?;
+
+            let product_id: i32 = product_row.get("id");
+            let product_name: String = product_row.get("name");
+            let product_price: Decimal = product_row.get("price");
+            let discount_row =
+                db.query_one("SELECT * FROM discount WHERE id = $1", &[&discount_id])?;
+
+            let discount_id: i32 = discount_row.get("id");
+            let discount_name: String = discount_row.get("name");
+            let discount_rate: Decimal = row.get("factor");
+
+            str.push_str(&format!(
+                "{product_id}, {product_name}, {product_price}, {discount_id}, {discount_name}, {discount_rate}\n"
+            ));
+        }
+        Ok(str)
+    }
+}

@@ -62,7 +62,7 @@ CREATE TABLE product(
     name VARCHAR(128) NOT NULL,
     description VARCHAR(1024),
     quantity INT NOT NULL,
-    price NUMERIC(16,2) NOT NULL,
+    price NUMERIC(16, 2) NOT NULL,
     PRIMARY KEY(id),
     FOREIGN KEY (supplier_id) REFERENCES supplier(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
@@ -89,7 +89,7 @@ CREATE TABLE orders(
 CREATE TABLE discount_item(
     discount_id INT NOT NULL,
     product_id INT NOT NULL,
-    factor NUMERIC(3, 2) NOT NULL, -- unsure about the data type
+    factor NUMERIC(16,2) NOT NULL,
     PRIMARY KEY(discount_id, product_id),
     FOREIGN KEY(discount_id) REFERENCES discount(id) ON UPDATE CASCADE ON DELETE CASCADE,
     FOREIGN KEY(product_id) REFERENCES product(id) ON UPDATE CASCADE ON DELETE CASCADE
@@ -109,6 +109,7 @@ CREATE TABLE order_item(
     order_id INT NOT NULL,
     product_id INT NOT NULL,
     quantity INT NOT NULL,
+    unit_price NUMERIC(16, 2) NOT NULL,
     PRIMARY KEY(order_id, product_id),
     FOREIGN KEY(order_id) REFERENCES orders(id) ON UPDATE CASCADE ON DELETE CASCADE,
     FOREIGN KEY(product_id) REFERENCES product(id) ON UPDATE CASCADE ON DELETE CASCADE

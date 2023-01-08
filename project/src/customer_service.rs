@@ -1,3 +1,4 @@
+use crate::command::Command;
 use crate::command::CustomerCommand;
 use crate::db::connect_db;
 use crate::hope::*;
@@ -147,14 +148,16 @@ impl CustomerCommand<()> for AddToCart {
             &[&customer.id()],
         );
 
-        let mut cart_id: i32 = 0;
+        let cart_id: i32;
         if let Ok(cart) = cart_row {
             cart_id = cart.get("id");
         } else {
-            db.execute(
-                "INSERT INTO cart(customer_id, updated) VALUES ($1, CURRENT_TIMESTAMP)",
+            let cart = db.query_one(
+                "INSERT INTO cart(customer_id, updated) VALUES ($1, CURRENT_TIMESTAMP)
+                 RETURNING id",
                 &[&customer.id()],
             )?;
+            cart_id = cart.get("id");
         }
 
         // Check the order_id, product_id primary keys
@@ -234,9 +237,24 @@ impl CustomerCommand<String> for ShowCartCommand {
                 &[&product_id],
             )?;
 
+            let discount_row = db.query_one(
+                "SELECT factor FROM discount_item
+                 INNER JOIN discount ON discount_id = id
+                 WHERE product_id=$1 AND CURRENT_TIMESTAMP BETWEEN start_date AND end_date",
+                &[&product_id],
+            );
+            let mut discount_factor: Decimal = Decimal::from_f64(1.0).unwrap();
+            if let Ok(discount) = discount_row {
+                discount_factor = discount.get("factor");
+            } else {
+                let err = discount_row.unwrap_err();
+                eprintln!("{}", err);
+            }
+
             let name: String = product_row.get("name");
             let price: Decimal = product_row.get("price");
-            let sum = price * Decimal::from_i32(quantity).unwrap();
+            let unit_price: Decimal = price * discount_factor;
+            let sum = unit_price * Decimal::from_i32(quantity).unwrap();
 
             str.push_str(&format!(
                 "{product_id}, {name}, {price}, {quantity}, {sum}\n"
@@ -273,7 +291,7 @@ impl CustomerCommand<()> for CheckoutCommand {
 
             let mut transaction = db.transaction()?;
             let insert_item = transaction.prepare(
-                "INSERT INTO order_item(order_id, product_id, quantity) VALUES ($1, $2, $3)",
+                "INSERT INTO order_item(order_id, product_id, quantity, unit_price) VALUES ($1, $2, $3, $4)",
             )?;
 
             let product_q = transaction.prepare("SELECT * FROM product WHERE id = $1")?;
@@ -284,7 +302,21 @@ impl CustomerCommand<()> for CheckoutCommand {
                 let product_id: i32 = item.get("product_id");
                 let quantity: i32 = item.get("quantity");
                 let product_row = transaction.query_one(&product_q, &[&product_id])?;
+                let price: Decimal = product_row.get("price");
                 let product_quantity: i32 = product_row.get("quantity");
+
+                let discount_row = transaction.query_one(
+                    "SELECT factor FROM discount_item
+                    INNER JOIN discount ON discount_id = id
+                    WHERE product_id=$1 AND CURRENT_TIMESTAMP BETWEEN start_date AND end_date",
+                    &[&product_id],
+                );
+                let mut discount_factor: Decimal = Decimal::from_f64(1.0).unwrap();
+                if let Ok(discount) = discount_row {
+                    discount_factor = discount.get("factor");
+                }
+
+                let unit_price: Decimal = price * discount_factor;
 
                 let new_quantity = product_quantity - quantity;
                 if new_quantity < 0 {
@@ -295,7 +327,10 @@ impl CustomerCommand<()> for CheckoutCommand {
                     )));
                 }
                 transaction.execute(&dec_quantity, &[&new_quantity, &product_id])?;
-                transaction.execute(&insert_item, &[&order_id, &product_id, &quantity])?;
+                transaction.execute(
+                    &insert_item,
+                    &[&order_id, &product_id, &quantity, &unit_price],
+                )?;
             }
 
             transaction.execute("DELETE FROM cart_item WHERE cart_id = $1", &[&cart_id])?;
@@ -360,7 +395,7 @@ impl CustomerCommand<String> for ShowOrdersCommand {
 
         //let order_call_rows = db.query("CALL show_orders($1)", &[&customer.id()])?;
         let order_rows = db.query(
-            "SELECT orders.id, status, SUM(product.price * order_item.quantity) AS price, orders.created FROM orders
+            "SELECT orders.id, status, SUM(order_item.unit_price * order_item.quantity) AS price, orders.created FROM orders
              INNER JOIN order_item ON orders.id=order_item.order_id
              INNER JOIN product ON order_item.product_id = product.id
              WHERE customer_id=$1
@@ -368,7 +403,7 @@ impl CustomerCommand<String> for ShowOrdersCommand {
             &[&customer.id()],
         )?;
 
-        let mut str: String = "id, date, name, status, price\n".to_string();
+        let mut str: String = "id, date, name, status, price with applied discount\n".to_string();
         for order in order_rows {
             let id: i32 = order.get("id");
             let status: String = order.get("status");
@@ -376,6 +411,46 @@ impl CustomerCommand<String> for ShowOrdersCommand {
             let date: NaiveDateTime = order.get("created");
 
             str.push_str(&format!("{id}, {date}, {status}, {price}\n"));
+        }
+        Ok(str)
+    }
+}
+
+pub struct DiscountedProductsCommand {}
+impl Command<String> for DiscountedProductsCommand {
+    fn run(&self) -> Result<String, Box<dyn Error>> {
+        let mut db = connect_db()?;
+        let discount_item_rows = db.query(
+            "SELECT product_id, discount_id, factor FROM discount_item
+             INNER JOIN discount ON discount_id = id
+             WHERE CURRENT_TIMESTAMP BETWEEN start_date AND end_date",
+            &[],
+        )?;
+
+        let mut str: String =
+            "product id, name , discount id, discount name, discount percentage\n".to_string();
+        for row in discount_item_rows {
+            let product_id: i32 = row.get("product_id");
+            let discount_id: i32 = row.get("discount_id");
+
+            let product_row = db.query_one(
+                "SELECT product.id, product.name, price FROM product WHERE id = $1",
+                &[&product_id],
+            )?;
+
+            let product_id: i32 = product_row.get("id");
+            let product_name: String = product_row.get("name");
+            let product_price: Decimal = product_row.get("price");
+            let discount_row =
+                db.query_one("SELECT * FROM discount WHERE id = $1", &[&discount_id])?;
+
+            let discount_id: i32 = discount_row.get("id");
+            let discount_name: String = discount_row.get("name");
+            let discount_rate: Decimal = row.get("factor");
+
+            str.push_str(&format!(
+                "{product_id}, {product_name}, {product_price}, {discount_id}, {discount_name}, {discount_rate}\n"
+            ));
         }
         Ok(str)
     }

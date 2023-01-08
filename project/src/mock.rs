@@ -6,6 +6,12 @@ use std::error::Error;
 
 fn admin_mock() -> Result<(), Box<dyn Error>> {
     let mut admin = RegisterAdminCommand {
+        email: "admin".to_string(),
+        password: "admin".to_string(),
+    }
+    .run()?;
+
+    admin = RegisterAdminCommand {
         email: "eric@hopestore.se".to_string(),
         password: "hello".to_string(),
     }

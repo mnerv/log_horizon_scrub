@@ -157,6 +157,13 @@ fn list_product_max_order(admin: &mut Admin) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+fn list_discounted_products(admin: &mut Admin) -> Result<(), Box<dyn Error>> {
+    let cmd = DiscountHistoryCommand {};
+    let str = cmd.run(admin)?;
+    println!("{}", str);
+    Ok(())
+}
+
 fn admin_home(admin: &mut Admin) {
     let pepper: &'static str = r#"
  /_/_  _  _    __/__  __
@@ -177,11 +184,12 @@ fn admin_home(admin: &mut Admin) {
         println!("  6. Search for product");
         println!("  7. Add new discount");
         println!("  8. Assign discount");
-        println!("  9. View discounted products");
-        println!(" 10. View discount history");
-        println!(" 11. List unconfirmed order");
-        println!(" 12. Confirm order");
-        println!(" 13. List products with max orders");
+        println!("  9. View discounted products (all)");
+        println!(" 10. View discounted products (active)");
+        println!(" 11. View discount history");
+        println!(" 12. List unconfirmed order");
+        println!(" 13. Confirm order");
+        println!(" 14. List products with max orders");
         println!("  0. Log out");
         println!();
 
@@ -195,11 +203,12 @@ fn admin_home(admin: &mut Admin) {
             "6" => search_product(),
             "7" => add_new_discount(admin),
             "8" => assign_discount(admin),
-            "9" => show_discounted_products(),
-            "10" => view_discount_history(admin),
-            "11" => view_unconfirmed_orders(admin),
-            "12" => confirm_order(admin),
-            "13" => list_product_max_order(admin),
+            "9" => list_discounted_products(admin),
+            "10" => show_discounted_products(),
+            "11" => view_discount_history(admin),
+            "12" => view_unconfirmed_orders(admin),
+            "13" => confirm_order(admin),
+            "14" => list_product_max_order(admin),
             "0" => break,
             _ => Ok(()),
         };
@@ -307,7 +316,7 @@ fn delete_order(customer: &mut Customer) -> Result<(), Box<dyn Error>> {
 }
 
 fn show_discounted_products() -> Result<(), Box<dyn Error>> {
-    let show_cmd = ShowDiscountedProductsCommand {};
+    let show_cmd = DiscountedProductsCommand {};
     let str = show_cmd.run()?;
     println!("{}", str);
     Ok(())
