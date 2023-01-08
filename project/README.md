@@ -32,3 +32,10 @@ Use query command below to list schemas in `psql`.
 SELECT schema_name FROM information_schema.schemata;
 ```
 
+`psql` commands
+
+```
+\dt  -  Show tables
+\dn  -  Show schemas
+\df  -  Show function and procedures
+```

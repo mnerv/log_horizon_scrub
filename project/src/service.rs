@@ -183,23 +183,22 @@ impl CustomerCommand<()> for LoginCustomerCommand {
     }
 }
 
-pub struct AddSupplierCommandV2 {
-    pub admin_id: i32,
+pub struct AddSupplierCommand {
     pub name: String,
     pub description: String,
-    pub orgnum: String,
+    pub org_num: String,
     pub street: String,
     pub postcode: String,
     pub city: String,
     pub country: String,
     pub telephone: String,
 }
-impl Command<()> for AddSupplierCommandV2 {
-    fn run(&self) -> Result<(), Box<dyn Error>> {
+impl AdminCommand<()> for AddSupplierCommand {
+    fn run(&self, admin: &mut Admin) -> Result<(), Box<dyn Error>> {
         let mut db = connect_db()?;
         let mut action = db.transaction()?;
 
-        let added_address = action.query_one(
+        let added_address = action.query(
             "INSERT INTO address(
                 street,
                 postcode,
@@ -207,7 +206,7 @@ impl Command<()> for AddSupplierCommandV2 {
                 country,
                 telephone
             ) VALUES ($1, $2, $3, $4, $5)
-            RETURNING *",
+            RETURNING id",
             &[
                 &self.street,
                 &self.postcode,
@@ -217,43 +216,35 @@ impl Command<()> for AddSupplierCommandV2 {
             ],
         )?;
 
-        let address_id: i32 = added_address.get("id");
+        if added_address.len() > 1 {
+            return Err(Box::new(io::Error::new(
+                ErrorKind::Other,
+                "Failed to create address for supplier",
+            )));
+        }
 
-        // action.
-        Ok(())
-    }
-}
+        let address_id: i32 = added_address[0].get("id");
 
-pub struct AddSupplierCommand {
-    pub admin_id: i32,
-    pub name: String,
-    pub description: String,
-    pub orgnum: String,
-    pub street: String,
-    pub postcode: String,
-    pub city: String,
-    pub country: String,
-    pub telephone: String,
-}
-impl Command<()> for AddSupplierCommand {
-    fn run(&self) -> Result<(), Box<dyn Error>> {
-        let mut db = connect_db()?;
-        let ok_insert = db.execute(
-            "CALL insert_supplier($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+        let add_supplier = action.query(
+    "INSERT INTO supplier(
+                admin_id,
+                address_id,
+                name,
+                description,
+                orgnum
+            ) VALUES ($1, $2, $3, $4, $5)
+            RETURNING *", 
             &[
-                &self.admin_id,
+                &admin.id(),
+                &address_id,
                 &self.name,
                 &self.description,
-                &self.orgnum,
-                &self.street,
-                &self.postcode,
-                &self.city,
-                &self.country,
-                &self.telephone,
-            ],
+                &self.org_num
+            ]
         )?;
 
-        if ok_insert == 1 {
+        if add_supplier.len() == 1{
+            action.commit()?;
             Ok(())
         } else {
             Err(Box::new(io::Error::new(
@@ -299,10 +290,9 @@ pub struct EditProductQuantityCommand {
     pub quantity: i32,
 }
 impl AdminCommand<()> for EditProductQuantityCommand {
-    fn run(&self, admin: &mut Admin) -> Result<(), Box<dyn Error>> {
+    fn run(&self, _: &mut Admin) -> Result<(), Box<dyn Error>> {
         let mut db = connect_db()?;
-
-        let update = db.execute(
+        db.execute(
             "UPDATE product SET quantity = $1 WHERE id = $2",
             &[&self.quantity, &self.product_id],
         )?;

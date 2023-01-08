@@ -36,8 +36,10 @@ fn read_date(label: &str) -> Result<NaiveDateTime, Box<dyn Error>> {
     )))
 }
 
-fn admin_create_supplier() -> Result<(), Box<dyn Error>> {
+fn admin_create_supplier(admin: &mut Admin) -> Result<(), Box<dyn Error>> {
     let name = read_input("name: ");
+    let description = read_input("description: ");
+    let org_num = read_input("organization number: ");
 
     let street = read_input("street: ");
     let postcode = read_input("postcode: ");
@@ -45,12 +47,17 @@ fn admin_create_supplier() -> Result<(), Box<dyn Error>> {
     let country = read_input("country: ");
     let telephone = read_input("telephone nr: ");
 
-    //let add_supplier = AddSupplierCommand {
-    //    admin_id,
-    //    address_id: maybe_address.unwrap().to_owned(),
-    //    name,
-    //};
-    //run_command(add_supplier);
+    let cmd = AddSupplierCommand{
+        name,
+        description,
+        org_num,
+        street,
+        postcode,
+        city,
+        country,
+        telephone,
+    };
+    cmd.run(admin)?;
     Ok(())
 }
 
@@ -159,7 +166,7 @@ fn admin_home(admin: &mut Admin) {
 
         let choice = read_input(" option: ");
         let result = match choice.as_str() {
-            "1" => admin_create_supplier(),
+            "1" => admin_create_supplier(admin),
             "2" => admin_create_product(),
             "3" => admin_edit_product_quantity(admin),
             "4" => delete_product(admin),
