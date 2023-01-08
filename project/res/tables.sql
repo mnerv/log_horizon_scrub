@@ -20,7 +20,7 @@ CREATE TABLE address(
     postcode VARCHAR(8),
     city VARCHAR(30),
     country VARCHAR(30),
-    telephone CHAR(10),
+    telephone CHAR(30),
     PRIMARY KEY (id)
 );
 

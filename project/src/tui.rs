@@ -1,7 +1,9 @@
+use crate::admin_service::*;
 use crate::command::*;
+use crate::common_service::*;
+use crate::customer_service::*;
 use crate::hope::*;
-use crate::service::*;
-use chrono::{DateTime, NaiveDateTime};
+use chrono::NaiveDateTime;
 use std::{error::Error, io::Write};
 
 /**
@@ -47,7 +49,7 @@ fn admin_create_supplier(admin: &mut Admin) -> Result<(), Box<dyn Error>> {
     let country = read_input("country: ");
     let telephone = read_input("telephone nr: ");
 
-    let cmd = AddSupplierCommand{
+    let cmd = AddSupplierCommand {
         name,
         description,
         org_num,
@@ -61,7 +63,7 @@ fn admin_create_supplier(admin: &mut Admin) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn admin_create_product() -> Result<(), Box<dyn Error>> {
+fn admin_create_product(admin: &mut Admin) -> Result<(), Box<dyn Error>> {
     let name = read_input("name: ");
     let description = read_input("description: ");
 
@@ -69,17 +71,15 @@ fn admin_create_product() -> Result<(), Box<dyn Error>> {
     let price = read_input("price: ").parse::<f64>()?;
     let supplier_id = read_input("supplier id: ").parse::<i32>()?;
 
-    let add_cmd = AddProductCommand {
+    let cmd = AddProductCommand {
         supplier_id,
         name,
         description,
         quantity,
         price,
     };
-    Err(Box::new(std::io::Error::new(
-        std::io::ErrorKind::Other,
-        "create product Not implemented",
-    )))
+    cmd.run(admin)?;
+    Ok(())
 }
 
 fn admin_edit_product_quantity(admin: &mut Admin) -> Result<(), Box<dyn Error>> {
@@ -147,7 +147,13 @@ fn confirm_order(admin: &mut Admin) -> Result<(), Box<dyn Error>> {
     let order_id: i32 = read_input("order id: ").parse::<i32>()?;
     let cmd = ConfirmOrderCommand { order_id };
     cmd.run(admin)?;
+    Ok(())
+}
 
+fn list_product_max_order(admin: &mut Admin) -> Result<(), Box<dyn Error>> {
+    let cmd = ListProductsMaxOrderCommand {};
+    let str = cmd.run(admin)?;
+    println!("{}", str);
     Ok(())
 }
 
@@ -182,7 +188,7 @@ fn admin_home(admin: &mut Admin) {
         let choice = read_input(" option: ");
         let result = match choice.as_str() {
             "1" => admin_create_supplier(admin),
-            "2" => admin_create_product(),
+            "2" => admin_create_product(admin),
             "3" => admin_edit_product_quantity(admin),
             "4" => delete_product(admin),
             "5" => list_all_products(),
@@ -193,7 +199,7 @@ fn admin_home(admin: &mut Admin) {
             "10" => view_discount_history(admin),
             "11" => view_unconfirmed_orders(admin),
             "12" => confirm_order(admin),
-            "13" => Ok(()),
+            "13" => list_product_max_order(admin),
             "0" => break,
             _ => Ok(()),
         };
@@ -278,7 +284,9 @@ fn show_orders(customer: &mut Customer) -> Result<(), Box<dyn Error>> {
 }
 
 fn checkout(customer: &mut Customer) -> Result<(), Box<dyn Error>> {
-    let checkout_cmd = CheckoutCommand {};
+    let checkout_cmd = CheckoutCommand {
+        date_time: NaiveDateTime::from(chrono::offset::Local::now().naive_utc()),
+    };
     checkout_cmd.run(customer)?;
     Ok(())
 }

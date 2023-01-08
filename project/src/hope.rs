@@ -41,6 +41,11 @@ pub enum LockStatus {
 }
 
 #[derive(Clone)]
+pub struct Supplier {
+    pub id: i32,
+}
+
+#[derive(Clone)]
 pub struct Product {
     pub id: i32,
     pub supplier_id: i32,
