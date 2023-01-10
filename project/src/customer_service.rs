@@ -223,12 +223,27 @@ impl CustomerCommand<String> for ShowCartCommand {
         let cart_row = db.query_one(
             "SELECT id FROM cart WHERE customer_id=$1",
             &[&customer.id()],
-        )?;
-        let cart_id: i32 = cart_row.get(0);
-        let cart = db.query("SELECT * FROM cart_item WHERE cart_id=$1", &[&cart_id])?;
+        );
 
         // FIXME: Maybe return a better looking formatting
         let mut str: String = "id, name, price, quantity, sum\n".to_string();
+
+        if let Err(_) = cart_row {
+            return Ok(str);
+        }
+
+        let cart_id: i32;
+        if let Ok(cart) = cart_row {
+            cart_id = cart.get("id");
+        } else {
+            return Err(Box::new(io::Error::new(
+                ErrorKind::Other,
+                format!("Failed view cart: {}", cart_row.unwrap_err()),
+            )));
+        }
+
+        let cart = db.query("SELECT * FROM cart_item WHERE cart_id=$1", &[&cart_id])?;
+
         for row in cart {
             let product_id: i32 = row.get("product_id");
             let quantity: i32 = row.get("quantity");
@@ -247,8 +262,8 @@ impl CustomerCommand<String> for ShowCartCommand {
             if let Ok(discount) = discount_row {
                 discount_factor = discount.get("factor");
             } else {
-                let err = discount_row.unwrap_err();
-                eprintln!("{}", err);
+                //let err = discount_row.unwrap_err();
+                //eprintln!("{}", err);
             }
 
             let name: String = product_row.get("name");

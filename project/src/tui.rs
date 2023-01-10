@@ -1,11 +1,3 @@
-use crate::admin_service::*;
-use crate::command::*;
-use crate::common_service::*;
-use crate::customer_service::*;
-use crate::hope::*;
-use chrono::NaiveDateTime;
-use std::{error::Error, io::Write};
-
 /**
  * @file   tui.rs
  * @author Pratchaya Khansomboon (me@mononerv.dev)
@@ -16,6 +8,13 @@ use std::{error::Error, io::Write};
  *
  * @copyright Copyright (c) 2022
  */
+use crate::admin_service::*;
+use crate::command::*;
+use crate::common_service::*;
+use crate::customer_service::*;
+use crate::hope::*;
+use chrono::NaiveDateTime;
+use std::{error::Error, io::Write};
 
 fn read_input(label: &str) -> String {
     let mut input = String::new();
