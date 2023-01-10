@@ -144,7 +144,7 @@ impl CustomerCommand<()> for AddToCart {
         let mut db = connect_db()?;
 
         let cart_row = db.query_one(
-            "SELECT cart.id FROM cart INNER JOIN customer ON customer.id = $1",
+            "SELECT cart.id FROM cart WHERE customer_id = $1",
             &[&customer.id()],
         );
 
@@ -427,6 +427,43 @@ impl CustomerCommand<String> for ShowOrdersCommand {
 
             str.push_str(&format!("{id}, {date}, {status}, {price}\n"));
         }
+        Ok(str)
+    }
+}
+
+pub struct ShowOrderProductsCommand {
+    pub order_id: i32
+}
+impl CustomerCommand<String> for ShowOrderProductsCommand {
+    fn run(&self, customer: &mut Customer) -> Result<String, Box<dyn Error>> {
+        let mut db = connect_db()?;
+
+        let order_items = db.query(
+            "SELECT
+                product.id,
+                product.name,
+                order_item.quantity,
+                order_item.unit_price,
+                (order_item.quantity * order_item.unit_price) as total
+            FROM order_item
+            INNER JOIN product ON product.id = order_item.product_id
+            WHERE order_item.order_id = $1",
+            &[&self.order_id]
+        )?;
+
+        let mut str: String = "id, name, quantity, unit price, total".to_string();
+        let mut total: Decimal = Decimal::from_f64(0.0).unwrap();
+        for order in order_items {
+            let id: i32 = order.get(0);
+            let name: String = order.get(1);
+            let quantity: i32 = order.get(2);
+            let unit_price: Decimal = order.get(3);
+            let sub_total: Decimal = order.get(4);
+            total += sub_total;
+
+            str.push_str(&format!("{id}, {name}, {quantity}, {unit_price}, {sub_total}\n"));
+        }
+        str.push_str(&format!("order total: {total}\n"));
         Ok(str)
     }
 }

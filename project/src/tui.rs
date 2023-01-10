@@ -142,6 +142,13 @@ fn view_unconfirmed_orders(admin: &mut Admin) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+fn view_confirmed_orders(admin: &mut Admin) -> Result<(), Box<dyn Error>> {
+    let view_cmd = ViewConfirmedOrdersCommand {};
+    let str = view_cmd.run(admin)?;
+    println!("{}", str);
+    Ok(())
+}
+
 fn confirm_order(admin: &mut Admin) -> Result<(), Box<dyn Error>> {
     let order_id: i32 = read_input("order id: ").parse::<i32>()?;
     let cmd = ConfirmOrderCommand { order_id };
@@ -187,8 +194,9 @@ fn admin_home(admin: &mut Admin) {
         println!(" 10. View discounted products (active)");
         println!(" 11. View discount history");
         println!(" 12. List unconfirmed order");
-        println!(" 13. Confirm order");
-        println!(" 14. List products with max orders");
+        println!(" 13. List confirmed order");
+        println!(" 14. Confirm order");
+        println!(" 15. List products with max orders");
         println!("  0. Log out");
         println!();
 
@@ -206,8 +214,9 @@ fn admin_home(admin: &mut Admin) {
             "10" => show_discounted_products(),
             "11" => view_discount_history(admin),
             "12" => view_unconfirmed_orders(admin),
-            "13" => confirm_order(admin),
-            "14" => list_product_max_order(admin),
+            "13" => view_confirmed_orders(admin),
+            "14" => confirm_order(admin),
+            "15" => list_product_max_order(admin),
             "0" => break,
             _ => Ok(()),
         };
@@ -321,6 +330,16 @@ fn show_discounted_products() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+fn show_order_products(customer: &mut Customer) -> Result<(), Box<dyn Error>> {
+    let order_id = read_input("Order id:").parse::<i32>().unwrap();
+    let show_cmd = ShowOrderProductsCommand {
+        order_id
+    };
+    let str = show_cmd.run(customer)?;
+    println!("{}", str);
+    Ok(())
+}
+
 fn customer_main() {
     let mut customer = Customer::default();
     loop {
@@ -369,6 +388,7 @@ fn customer_main() {
         println!("6. Show orders");
         println!("7. Delete an order");
         println!("8. Checkout");
+        println!("9. Show order products");
         println!("0. Log out");
 
         let input = read_input("option: ");
@@ -381,6 +401,7 @@ fn customer_main() {
             "6" => show_orders(&mut customer),
             "7" => delete_order(&mut customer),
             "8" => checkout(&mut customer),
+            "9" => show_order_products(&mut customer),
             "0" => break,
             _ => Ok(()),
         };

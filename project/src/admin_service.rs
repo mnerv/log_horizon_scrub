@@ -288,6 +288,25 @@ impl AdminCommand<String> for ViewUnconfirmedOrdersCommand {
     }
 }
 
+pub struct ViewConfirmedOrdersCommand {}
+impl AdminCommand<String> for ViewConfirmedOrdersCommand {
+    fn run(&self, _: &mut Admin) -> Result<String, Box<dyn Error>> {
+        let mut db = connect_db()?;
+        let order_rows = db.query("SELECT * FROM orders WHERE confirmed_by_admin IS NOT NULL", &[])?;
+
+        let mut str: String = "id, customer, created, status\n".to_string();
+        for order in order_rows {
+            let id: i32 = order.get("id");
+            let customer: i32 = order.get("customer_id");
+            let created: NaiveDateTime = order.get("created");
+            let status: String = order.get("status");
+
+            str.push_str(&format!("{id}, {customer}, {created}, {status}\n"));
+        }
+        Ok(str)
+    }
+}
+
 pub struct ConfirmOrderCommand {
     pub order_id: i32,
 }
